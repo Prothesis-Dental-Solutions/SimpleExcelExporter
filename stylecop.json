@@ -1,0 +1,15 @@
+{
+  // WARNING: This file will not take effect until additional steps are taken to enable it.
+  // See the following page for additional information:
+  // https://github.com/DotNetAnalyzers/StyleCopAnalyzers/blob/master/documentation/EnableConfiguration.md
+  // This file should be added as a link to every project in the solution to enable solution wide Stylecop configuration.
+
+  // See the following page for documentation about Stylecop configuration:
+  // https://github.com/DotNetAnalyzers/StyleCopAnalyzers/blob/master/documentation/Configuration.md
+
+
+
+  "$schema": "https://raw.githubusercontent.com/DotNetAnalyzers/StyleCopAnalyzers/master/StyleCop.Analyzers/StyleCop.Analyzers/Settings/stylecop.schema.json",
+  "settings": {
+  }
+}

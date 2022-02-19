@@ -1,0 +1,18 @@
+﻿namespace SimpleExcelExporter.Definitions
+{
+  using System.Collections.Generic;
+
+  public class WorksheetDfn
+  {
+    public WorksheetDfn(string name)
+    {
+      Name = name;
+    }
+
+    public string Name { get; }
+
+    public RowDfn ColumnHeadings { get; } = new RowDfn();
+
+    public ICollection<RowDfn> Rows { get; } = new HashSet<RowDfn>();
+  }
+}
