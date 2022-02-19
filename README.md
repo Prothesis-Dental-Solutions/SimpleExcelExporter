@@ -1,9 +1,11 @@
 # SimpleExcelExporter
+
 This C# library is intended to help export data to Excel .xlsx file.
 
+Internally it uses the [Microsoft DocumentFormat.OpenXml library](https://github.com/OfficeDev/Open-XML-SDK). Unlike DocumentFormat.OpenXml, this library doesn't aim to produce any possible kind of .xlsx file but focus on the use case where a user of your application wants to export data to an Excel file. Of course you can use DocumentFormat.OpenXml directly but we believe this library is simpler and is less error prone for that particular use case.
+
 ## How to use?
-1. Annotate your classes
-Let's say you have a Player class in your code. Add annotations to guide SimpleExcelExporter how to export your data.
+1. Annotate your classes. Let's say you have a Player class in your code. Add annotations to guide SimpleExcelExporter how to export your data.
 ``` C#
 public class Player
 {
@@ -76,5 +78,5 @@ using FileStream file = new FileStream(Path.Combine(tempDi.FullName, "TestWithDa
 memoryStream.WriteTo(file);
 ```
 
-## What if I don't want to annotate my class with your annotation?
-You can still use SimpleExcelExporter but you'll have a bit more code to write. Have a look at [this code](https://github.com/Prothesis-Dental-Solutions/SimpleExcelExporter/blob/dda3b06649b6ec9e4126c0f5af743c931c048595/src/ConsoleApp/Program.cs#L211-L274)
+## What if I don't want to annotate my class with your annotations?
+You can still use SimpleExcelExporter but you'll have a bit more code to write. Have a look at [this example](https://github.com/Prothesis-Dental-Solutions/SimpleExcelExporter/blob/dda3b06649b6ec9e4126c0f5af743c931c048595/src/ConsoleApp/Program.cs#L211-L274)
