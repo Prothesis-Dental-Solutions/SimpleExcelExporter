@@ -14,7 +14,7 @@
     <PackageProjectUrl>https://github.com/Prothesis-Dental-Solutions/SimpleExcelExporter</PackageProjectUrl>
     <PackageReadmeFile>README.md</PackageReadmeFile>
     <RepositoryUrl>https://github.com/Prothesis-Dental-Solutions/SimpleExcelExporter</RepositoryUrl>
-    <PackageTags>Excel;export;Open-XML-SDK;xlsx</PackageTags>
+    <PackageTags>Excel;export;Open-XML-SDK;xlsx;ooxml</PackageTags>
   </PropertyGroup>
 
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|AnyCPU'">

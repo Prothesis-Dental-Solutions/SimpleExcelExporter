@@ -3,7 +3,7 @@
 [![NuGet version (SimpleExcelExporter)](https://img.shields.io/nuget/v/SimpleExcelExporter.svg?style=flat-square)](https://www.nuget.org/packages/SimpleexcelExporter/)
 [![.NET](https://github.com/Prothesis-Dental-Solutions/SimpleExcelExporter/actions/workflows/dotnet.yml/badge.svg)](https://github.com/Prothesis-Dental-Solutions/SimpleExcelExporter/actions/workflows/dotnet.yml)
 
-This C# library is intended to help export data to Excel .xlsx file.
+This C# library helps export data to Excel .xlsx file.
 
 Internally it uses the [Microsoft DocumentFormat.OpenXml library](https://github.com/OfficeDev/Open-XML-SDK). Unlike DocumentFormat.OpenXml, this library doesn't aim to produce any possible kind of .xlsx file but focus on the use case where a user of your application wants to export data to an Excel file. Of course you can use DocumentFormat.OpenXml directly but we believe this library is simpler and is less error prone for that particular use case.
 
