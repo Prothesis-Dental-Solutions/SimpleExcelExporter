@@ -24,7 +24,7 @@ jobs:
     - name: Test
       run: dotnet test --no-build --verbosity normal
     - name: Pack
-      run: dotnet pack --no-build --verbosity normal --configuration release
+      run: dotnet pack --verbosity normal --configuration release
     - name: Push
       env: # environment variable
         NUGET_API_KEY: ${{ secrets.NUGET_API_KEY }}
