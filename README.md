@@ -39,7 +39,7 @@ public class Team
 ```
 
 2. Use SimpleExcelExporter to generate an Excel file:
-The following snippet comes from [SimpleExcelEporsterExaple](https://github.com/Prothesis-Dental-Solutions/SimpleExcelExporterExample/blob/b7a3b184892f83370b8d937dffd824c7f82b0b06/Program.cs#L6-L42)
+The following snippet comes from [SimpleExcelExporterExample](https://github.com/Prothesis-Dental-Solutions/SimpleExcelExporterExample/blob/b7a3b184892f83370b8d937dffd824c7f82b0b06/Program.cs#L6-L42)
 ``` C#
 // Instanciate the objects to export
 var team = new Team
@@ -86,7 +86,7 @@ memoryStream.WriteTo(file);
 In the following code I assume you have a resource file 
 
 2. Anotate your classes
-The following snippet comes from [SimpleExcelEporsterExaple](https://github.com/Prothesis-Dental-Solutions/SimpleExcelExporterExample/blob/b7a3b184892f83370b8d937dffd824c7f82b0b06/Team.cs#L5-L15)
+The following snippet comes from [SimpleExcelExporterExample](https://github.com/Prothesis-Dental-Solutions/SimpleExcelExporterExample/blob/b7a3b184892f83370b8d937dffd824c7f82b0b06/Team.cs#L5-L15)
 ``` C#
 public class Team
 {
@@ -101,7 +101,7 @@ public class Team
 }
 ```
 
-The following snippet comes from [SimpleExcelEporsterExaple](https://github.com/Prothesis-Dental-Solutions/SimpleExcelExporterExample/blob/b7a3b184892f83370b8d937dffd824c7f82b0b06/Player.cs#L6-L37)
+The following snippet comes from [SimpleExcelExporterExample](https://github.com/Prothesis-Dental-Solutions/SimpleExcelExporterExample/blob/b7a3b184892f83370b8d937dffd824c7f82b0b06/Player.cs#L6-L37)
 ``` C#
 public class Player
 {
