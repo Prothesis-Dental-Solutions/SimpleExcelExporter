@@ -28,4 +28,4 @@ jobs:
     - name: Push
       env: # environment variable
         NUGET_API_KEY: ${{ secrets.NUGET_API_KEY }}
-      run: dotnet nuget push --api-key "$NUGET_API_KEY" --skip-duplicate --source https://api.nuget.org/v3/index.json **/SimpleExcelExporter.*.nupkg
+      run: dotnet nuget push --api-key "$NUGET_API_KEY" --skip-duplicate --source https://api.nuget.org/v3/index.json src/SimpleExcelExporter/bin/release/SimpleExcelExporter.*.nupkg
