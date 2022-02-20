@@ -1,5 +1,6 @@
 # SimpleExcelExporter
 
+[![NuGet version (SimpleExcelExporter)](https://img.shields.io/nuget/v/SimpleExcelExporter.svg?style=flat-square)](https://www.nuget.org/packages/SimpleexcelExporter/)
 [![.NET](https://github.com/Prothesis-Dental-Solutions/SimpleExcelExporter/actions/workflows/dotnet.yml/badge.svg)](https://github.com/Prothesis-Dental-Solutions/SimpleExcelExporter/actions/workflows/dotnet.yml)
 
 This C# library is intended to help export data to Excel .xlsx file.
