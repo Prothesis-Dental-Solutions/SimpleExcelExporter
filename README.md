@@ -139,3 +139,11 @@ public class Player
 
 ## What if I don't want to annotate my class with your annotations?
 You can still use SimpleExcelExporter but you'll have a bit more code to write. Have a look at [this example](https://github.com/Prothesis-Dental-Solutions/SimpleExcelExporter/blob/dda3b06649b6ec9e4126c0f5af743c931c048595/src/ConsoleApp/Program.cs#L211-L274)
+
+## What spreadsheet are supported ?
+Before publishing a new version of `SimpleExcelExporter` to Nuget, we test the workbooks on:
+- Libre Office Calc (still/stable version)
+- Google Sheets
+- Excel 365 Windows (last stable version)
+- Excel 365 Mac OS (last stable version)
+

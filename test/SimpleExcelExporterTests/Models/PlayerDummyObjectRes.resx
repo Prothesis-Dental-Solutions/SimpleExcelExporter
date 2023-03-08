@@ -144,4 +144,7 @@
   <data name="DateTimeOffsetColumnName" xml:space="preserve">
     <value>DateTimeOffsetColumnValue</value>
   </data>
+  <data name="FieldGoalPercentageColumnName" xml:space="preserve">
+    <value>FieldGoalPercentage</value>
+  </data>
 </root>

@@ -31,6 +31,11 @@
     [Index(4)]
     public bool? IsActiveFlag { get; set; }
 
+    [CellDefinition(CellDataType.Percentage)]
+    [Header(typeof(PlayerDummyObjectRes), "FieldGoalPercentageColumnName")]
+    [Index(8)]
+    public double? FieldGoalPercentage { get; set; }
+
     [CellDefinition(CellDataType.Boolean)]
     [Header(typeof(PlayerDummyObjectRes), "SizeColumnName")]
     [Index(5)]

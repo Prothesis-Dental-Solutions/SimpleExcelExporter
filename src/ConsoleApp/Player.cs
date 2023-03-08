@@ -31,14 +31,19 @@
     [Index(4)]
     public bool? IsActiveFlag { get; set; }
 
+    [CellDefinition(CellDataType.Percentage)]
+    [Header(typeof(PlayerRes), "FieldGoalPercentageColumnName")]
+    [Index(5)]
+    public double? FieldGoalPercentage { get; set; }
+
     [CellDefinition(CellDataType.Boolean)]
     [Header(typeof(PlayerRes), "SizeColumnName")]
-    [Index(5)]
+    [Index(6)]
     public double? Size { get; set; }
 
     [CellDefinition(CellDataType.Number)]
     [Header(typeof(PlayerRes), "SalaryColumnName")]
-    [Index(5)]
+    [Index(7)]
     public decimal? Salary { get; set; }
   }
 }

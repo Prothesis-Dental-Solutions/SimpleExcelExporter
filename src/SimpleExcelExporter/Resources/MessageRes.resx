@@ -120,4 +120,8 @@
   <data name="EmptyMessageDefault" xml:space="preserve">
     <value>No data available to export</value>
   </data>
+  <data name="SheetNameLengthTooLong" xml:space="preserve">
+    <value>Name of the sheet '{0}' is too long (limited to 31 characters)</value>
+    <comment>{0}: SheetName</comment>
+  </data>
 </root>

@@ -44,6 +44,7 @@ namespace ConsoleApp
         DateOfBirth = null,
         IsActiveFlag = null,
         NumberOfVictory = null,
+        FieldGoalPercentage = null,
         Salary = null,
       };
       team.Players.Add(nullPlayer);
@@ -58,6 +59,7 @@ namespace ConsoleApp
           DateOfBirth = randomDate.Next(),
           IsActiveFlag = Convert.ToBoolean(rnd.Next(0, 100) % 2),
           NumberOfVictory = rnd.Next(0, 100),
+          FieldGoalPercentage = Convert.ToDouble(rnd.Next(0, 100)) / 100,
           Salary = Convert.ToDecimal(rnd.Next(2000, 1000000) + 0.12654984m),
         };
         team.Players.Add(player);
@@ -109,6 +111,7 @@ namespace ConsoleApp
             new CellDfn(randomDate.Next(), cellDataType: CellDataType.Date),
             new CellDfn(Convert.ToBoolean(rnd.Next(0, 100) % 2), cellDataType: CellDataType.Boolean),
             new CellDfn(rnd.Next(0, 100), cellDataType: CellDataType.Number),
+            new CellDfn(Convert.ToDouble(rnd.Next(0, 100)) / 100, cellDataType: CellDataType.Percentage),
           },
         };
         worksheetDfn.Rows.Add(rowDfn);
@@ -152,6 +155,7 @@ namespace ConsoleApp
             DateOfBirth = new DateTime(1974, 02, 01),
             IsActiveFlag = true,
             NumberOfVictory = 45,
+            FieldGoalPercentage = 0.1111,
             Salary = 2000.5m,
           },
           new Player
@@ -162,6 +166,7 @@ namespace ConsoleApp
             DateOfBirth = new DateTime(1990, 10, 13),
             IsActiveFlag = true,
             NumberOfVictory = 52,
+            FieldGoalPercentage = 0.222,
             Salary = 2141.5452m,
           },
           new Player
@@ -172,6 +177,7 @@ namespace ConsoleApp
             DateOfBirth = new DateTime(1976, 3, 1),
             IsActiveFlag = true,
             NumberOfVictory = 80,
+            FieldGoalPercentage = 0.33,
             Salary = 2111.5452m,
           },
           new Player
@@ -182,6 +188,7 @@ namespace ConsoleApp
             DateOfBirth = new DateTime(1979, 3, 1),
             IsActiveFlag = false,
             NumberOfVictory = 35,
+            FieldGoalPercentage = 0.4,
             Salary = 2845.719m,
           },
         },
@@ -217,11 +224,12 @@ namespace ConsoleApp
 
       // First sheet
       var worksheet1Dfn = new WorksheetDfn("MyFirstSheet");
-      worksheet1Dfn.ColumnHeadings.Cells.Add(new CellDfn("Name"));
+      worksheet1Dfn.ColumnHeadings.Cells.Add(new CellDfn("Name|\b|\n|\t|\r|<|>|&|'|\"|"));
       worksheet1Dfn.ColumnHeadings.Cells.Add(new CellDfn("Age"));
       worksheet1Dfn.ColumnHeadings.Cells.Add(new CellDfn("Rate"));
       worksheet1Dfn.ColumnHeadings.Cells.Add(new CellDfn("Postal code"));
       worksheet1Dfn.ColumnHeadings.Cells.Add(new CellDfn("DateTime"));
+      worksheet1Dfn.ColumnHeadings.Cells.Add(new CellDfn("Field goal percentage"));
       workbookDfn.Worksheets.Add(worksheet1Dfn);
       var row1 = new RowDfn();
       row1.Cells.Add(new CellDfn("Eric", cellDataType: CellDataType.String));
@@ -229,6 +237,7 @@ namespace ConsoleApp
       row1.Cells.Add(new CellDfn(45.00M, cellDataType: CellDataType.Number));
       row1.Cells.Add(new CellDfn("01090", cellDataType: CellDataType.String));
       row1.Cells.Add(new CellDfn(DateTime.Now, cellDataType: CellDataType.Date));
+      row1.Cells.Add(new CellDfn(0.0111, cellDataType: CellDataType.Percentage));
       worksheet1Dfn.Rows.Add(row1);
       var row2 = new RowDfn();
       row2.Cells.Add(new CellDfn("Bob", cellDataType: CellDataType.String));
@@ -236,6 +245,7 @@ namespace ConsoleApp
       row2.Cells.Add(new CellDfn(78.00M, cellDataType: CellDataType.Number));
       row2.Cells.Add(new CellDfn("01080", cellDataType: CellDataType.String));
       row2.Cells.Add(new CellDfn(DateTime.Now, cellDataType: CellDataType.Date));
+      row2.Cells.Add(new CellDfn(0.0222, cellDataType: CellDataType.Percentage));
       worksheet1Dfn.Rows.Add(row2);
 
       // Second sheet
@@ -244,6 +254,7 @@ namespace ConsoleApp
       worksheet2Dfn.ColumnHeadings.Cells.Add(new CellDfn("Age"));
       worksheet2Dfn.ColumnHeadings.Cells.Add(new CellDfn("Rate"));
       worksheet2Dfn.ColumnHeadings.Cells.Add(new CellDfn("Postal Code"));
+      worksheet2Dfn.ColumnHeadings.Cells.Add(new CellDfn("Field goal percentage"));
       workbookDfn.Worksheets.Add(worksheet2Dfn);
 
       // Third sheet
@@ -256,6 +267,7 @@ namespace ConsoleApp
       row31.Cells.Add(new CellDfn("01090", cellDataType: CellDataType.String));
       row31.Cells.Add(new CellDfn(DateTime.Now, cellDataType: CellDataType.Date));
       row31.Cells.Add(new CellDfn(true, cellDataType: CellDataType.Boolean));
+      row31.Cells.Add(new CellDfn(0.11, cellDataType: CellDataType.Percentage));
       worksheet3Dfn.Rows.Add(row31);
       var row32 = new RowDfn();
       row32.Cells.Add(new CellDfn("Bob", cellDataType: CellDataType.String));
@@ -264,6 +276,7 @@ namespace ConsoleApp
       row32.Cells.Add(new CellDfn("01080", cellDataType: CellDataType.String));
       row32.Cells.Add(new CellDfn(DateTime.Now, cellDataType: CellDataType.Date));
       row32.Cells.Add(new CellDfn(false, cellDataType: CellDataType.Boolean));
+      row31.Cells.Add(new CellDfn(22, cellDataType: CellDataType.Percentage));
       worksheet3Dfn.Rows.Add(row32);
 
       SpreadsheetWriter spreadsheetWriter = new SpreadsheetWriter(streamWriter.BaseStream, workbookDfn);

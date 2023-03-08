@@ -70,6 +70,15 @@ namespace ConsoleApp {
         }
         
         /// <summary>
+        ///   Looks up a localized string similar to Field goal percentage.
+        /// </summary>
+        public static string FieldGoalPercentageColumnName {
+            get {
+                return ResourceManager.GetString("FieldGoalPercentageColumnName", resourceCulture);
+            }
+        }
+        
+        /// <summary>
         ///   Looks up a localized string similar to Is active.
         /// </summary>
         public static string IsActiveFlagColumnName {

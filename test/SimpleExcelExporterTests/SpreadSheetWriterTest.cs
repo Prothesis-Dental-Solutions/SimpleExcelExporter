@@ -9,6 +9,7 @@
   using DocumentFormat.OpenXml.Validation;
   using NUnit.Framework;
   using SimpleExcelExporter.Definitions;
+  using SimpleExcelExporter.Resources;
   using SimpleExcelExporter.Tests.Preparators;
   using SimpleExcelExporter.Tests.Preparators.Definitions;
 
@@ -35,7 +36,7 @@
 
       // Check
       Assert.AreNotEqual(memoryStream.Length, 0);
-      Validate(memoryStream, 1, 3, 5);
+      Validate(memoryStream, 1, 3, 6);
 
       // Prepare an object
       var team = TeamDummyObjectPreparator.First();
@@ -60,7 +61,7 @@
       // Check
       Assert.AreNotEqual(memoryStream.Length, 0);
       // expected 1 sheet, 5 rows (1 header + 4 players), 9 cells 
-      Validate(memoryStream, 1, 5, 9);
+      Validate(memoryStream, 1, 5, 10);
 
       // Prepare an empty object - two properties with the same index column
       var teamWithSameColumnIndex = TeamWithSameColumnIndexDummyObjectPreparator.First();
@@ -94,6 +95,25 @@
       // Act
       // ReSharper disable once ObjectCreationAsStatement
       Assert.Throws<DefinitionException>(() => new SpreadsheetWriter(memoryStream, teamWithSameSheetName));
+    }
+
+    [Test]
+    public void SpreadsheetExportSheetNameLengthTest()
+    {
+      // Prepare a non empty workbook
+      var tooLongSheetName = "Name with something bigger than 31 characters.";
+      var workBookDfn = WorkbookDfnPreparator.First();
+      workBookDfn.Worksheets.Add(new WorksheetDfn(tooLongSheetName));
+      using var memoryStream = new MemoryStream();
+      var expected = new SimpleExcelExporterException(string.Format(MessageRes.SheetNameLengthTooLong, tooLongSheetName));
+
+      // Act
+      // ReSharper disable once ObjectCreationAsStatement
+      SimpleExcelExporterException simpleExcelExporterException = Assert.Throws<SimpleExcelExporterException>(() => new SpreadsheetWriter(memoryStream, workBookDfn));
+
+      // Check
+      Assert.IsNotNull(simpleExcelExporterException);
+      Assert.AreEqual(expected.Message, simpleExcelExporterException.Message);
     }
 
     private static readonly List<string> ExpectedErrors = new List<string>()

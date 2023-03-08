@@ -68,5 +68,14 @@ namespace SimpleExcelExporter.Resources {
                 return ResourceManager.GetString("EmptyMessageDefault", resourceCulture);
             }
         }
+        
+        /// <summary>
+        ///   Looks up a localized string similar to Name of the sheet &apos;{0}&apos; is too long (limited to 31 characters).
+        /// </summary>
+        public static string SheetNameLengthTooLong {
+            get {
+                return ResourceManager.GetString("SheetNameLengthTooLong", resourceCulture);
+            }
+        }
     }
 }

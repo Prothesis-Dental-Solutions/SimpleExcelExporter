@@ -295,6 +295,7 @@
         }
         else if (cellDfn.Value is string stringValue)
         {
+          stringValue = XmlStringHelper.Sanitize(stringValue);
           cell.CellValue = new CellValue(stringValue);
           cell.DataType = new EnumValue<CellValues>(CellValues.String);
         }
@@ -424,6 +425,10 @@
       {
         cellFormat.NumberFormatId = 49U; // @
       }
+      else if (cellDfn.CellDataType == CellDataType.Percentage)
+      {
+        cellFormat.NumberFormatId = 10U;
+      }
       else
       {
         cellFormat.NumberFormatId = 0U;
@@ -482,6 +487,11 @@
         if (count > 1)
         {
           throw new DefinitionException($"Only one worksheet could be named [{worksheet.Name}]");
+        }
+
+        if (worksheet.Name.Length > 31)
+        {
+          throw new SimpleExcelExporterException(string.Format(MessageRes.SheetNameLengthTooLong, worksheet.Name));
         }
       }
 

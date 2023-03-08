@@ -18,6 +18,11 @@
     Number,
 
     /// <summary>
+    /// Percentage data type
+    /// </summary>
+    Percentage,
+
+    /// <summary>
     /// String data type
     /// </summary>
 #pragma warning disable CA1720 // Identifier contains type name
