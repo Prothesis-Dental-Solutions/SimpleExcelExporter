@@ -12,7 +12,7 @@
     <Description>Helps exporting objects to an Excel file (.xlsx).</Description>
     <Copyright>Prothesis Dental Solutions</Copyright>
     <PackageProjectUrl>https://github.com/Prothesis-Dental-Solutions/SimpleExcelExporter</PackageProjectUrl>
-    <PackageReadmeFile>README.md</PackageReadmeFile>
+    <PackageReadmeFile>../README.md</PackageReadmeFile>
     <RepositoryUrl>https://github.com/Prothesis-Dental-Solutions/SimpleExcelExporter</RepositoryUrl>
     <PackageTags>Excel;export;Open-XML-SDK;xlsx;ooxml</PackageTags>
   </PropertyGroup>
