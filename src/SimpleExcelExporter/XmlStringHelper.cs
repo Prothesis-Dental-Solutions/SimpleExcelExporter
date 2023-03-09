@@ -1,13 +1,27 @@
 ﻿namespace SimpleExcelExporter
 {
-  using System.Linq;
+  using System.Text;
   using System.Xml;
 
   public static class XmlStringHelper
   {
     public static string Sanitize(string input)
     {
-      return string.Concat(input.Where(c => XmlConvert.IsXmlChar(c)));
+      StringBuilder sb = new StringBuilder();
+
+      foreach (char c in input)
+      {
+        if (XmlConvert.IsXmlChar(c))
+        {
+          sb.Append(c);
+        }
+        else
+        {
+          sb.Append(' ');
+        }
+      }
+
+      return sb.ToString();
     }
   }
 }

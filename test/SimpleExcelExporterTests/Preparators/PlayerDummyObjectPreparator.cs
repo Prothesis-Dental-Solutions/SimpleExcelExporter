@@ -8,7 +8,7 @@
     public static PlayerDummyObject First() => new PlayerDummyObject
     {
       PlayerCode = null,
-      PlayerName = "Player\bName1<a href=\"https://www.google.com\" /> &lt;b /&gt;",
+      PlayerName = "Player\bName1<a href=\"https://www.google.com\" /> &lt;b /&gt; \r\n\t",
       Size = 1.93d,
       DateOfBirth = new DateTime(1974, 02, 01),
       IsActiveFlag = true,

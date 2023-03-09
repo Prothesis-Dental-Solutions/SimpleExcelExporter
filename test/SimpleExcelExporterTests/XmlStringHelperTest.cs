@@ -12,7 +12,7 @@
       string value = XmlStringHelper.Sanitize("|\b|\n|\t|\r|<|>|&|'|\"|");
 
       // Check
-      Assert.AreEqual("||\n|\t|\r|<|>|&|'|\"|", value);
+      Assert.AreEqual("| |\n|\t|\r|<|>|&|'|\"|", value);
     }
   }
 }
