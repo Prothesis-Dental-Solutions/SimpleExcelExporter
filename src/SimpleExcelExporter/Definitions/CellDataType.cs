@@ -33,6 +33,5 @@
     /// Time data type
     /// </summary>
     Time,
-
   }
 }

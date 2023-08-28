@@ -36,7 +36,7 @@
 
       // Check
       Assert.AreNotEqual(memoryStream.Length, 0);
-      Validate(memoryStream, 1, 3, 6);
+      Validate(memoryStream, 1, 3, 7);
 
       // Prepare an object
       var team = TeamDummyObjectPreparator.First();
@@ -60,8 +60,8 @@
 
       // Check
       Assert.AreNotEqual(memoryStream.Length, 0);
-      // expected 1 sheet, 5 rows (1 header + 4 players), 9 cells 
-      Validate(memoryStream, 1, 5, 10);
+      // expected 1 sheet, 5 rows (1 header + 4 players), 10 cells 
+      Validate(memoryStream, 1, 5, 11);
 
       // Prepare an empty object - two properties with the same index column
       var teamWithSameColumnIndex = TeamWithSameColumnIndexDummyObjectPreparator.First();
