@@ -40,6 +40,7 @@ namespace ConsoleApp
       {
         PlayerCode = "Code0",
         PlayerName = null,
+        PracticeTime = null,
         Size = null,
         DateOfBirth = null,
         IsActiveFlag = null,
@@ -55,6 +56,7 @@ namespace ConsoleApp
         {
           PlayerCode = $"Code{i}",
           PlayerName = $"Player{i}",
+          PracticeTime = $"{rnd.Next(0, 1)}{rnd.Next(0, 9)}:{rnd.Next(0, 5)}{rnd.Next(0, 9)}",
           Size = rnd.Next(18, 100),
           DateOfBirth = randomDate.Next(),
           IsActiveFlag = Convert.ToBoolean(rnd.Next(0, 100) % 2),
@@ -112,6 +114,7 @@ namespace ConsoleApp
             new CellDfn(Convert.ToBoolean(rnd.Next(0, 100) % 2), cellDataType: CellDataType.Boolean),
             new CellDfn(rnd.Next(0, 100), cellDataType: CellDataType.Number),
             new CellDfn(Convert.ToDouble(rnd.Next(0, 100)) / 100, cellDataType: CellDataType.Percentage),
+            new CellDfn($"{rnd.Next(0, 1)}{rnd.Next(0, 9)}:{rnd.Next(0, 5)}{rnd.Next(0, 9)}", cellDataType: CellDataType.Time),
           },
         };
         worksheetDfn.Rows.Add(rowDfn);
@@ -151,6 +154,7 @@ namespace ConsoleApp
           {
             PlayerCode = null,
             PlayerName = "Alexandre",
+            PracticeTime = "09:01",
             Size = 1.93d,
             DateOfBirth = new DateTime(1974, 02, 01),
             IsActiveFlag = true,
@@ -162,6 +166,7 @@ namespace ConsoleApp
           {
             PlayerCode = "02",
             PlayerName = "Elina",
+            PracticeTime = "09:02",
             Size = 1.72d,
             DateOfBirth = new DateTime(1990, 10, 13),
             IsActiveFlag = true,
@@ -173,6 +178,7 @@ namespace ConsoleApp
           {
             PlayerCode = "03",
             PlayerName = "Franck",
+            PracticeTime = "09:03",
             Size = 1.85d,
             DateOfBirth = new DateTime(1976, 3, 1),
             IsActiveFlag = true,
@@ -184,6 +190,7 @@ namespace ConsoleApp
           {
             PlayerCode = "04",
             PlayerName = "Yann",
+            PracticeTime = "09:04",
             Size = 1.79d,
             DateOfBirth = new DateTime(1979, 3, 1),
             IsActiveFlag = false,
@@ -230,6 +237,7 @@ namespace ConsoleApp
       worksheet1Dfn.ColumnHeadings.Cells.Add(new CellDfn("Postal code"));
       worksheet1Dfn.ColumnHeadings.Cells.Add(new CellDfn("DateTime"));
       worksheet1Dfn.ColumnHeadings.Cells.Add(new CellDfn("Field goal percentage"));
+      worksheet1Dfn.ColumnHeadings.Cells.Add(new CellDfn("Practice time"));
       workbookDfn.Worksheets.Add(worksheet1Dfn);
       var row1 = new RowDfn();
       row1.Cells.Add(new CellDfn("Eric", cellDataType: CellDataType.String));
@@ -238,6 +246,7 @@ namespace ConsoleApp
       row1.Cells.Add(new CellDfn("01090", cellDataType: CellDataType.String));
       row1.Cells.Add(new CellDfn(DateTime.Now, cellDataType: CellDataType.Date));
       row1.Cells.Add(new CellDfn(0.0111, cellDataType: CellDataType.Percentage));
+      row1.Cells.Add(new CellDfn("08:01", cellDataType: CellDataType.Time));
       worksheet1Dfn.Rows.Add(row1);
       var row2 = new RowDfn();
       row2.Cells.Add(new CellDfn("Bob", cellDataType: CellDataType.String));
@@ -246,6 +255,7 @@ namespace ConsoleApp
       row2.Cells.Add(new CellDfn("01080", cellDataType: CellDataType.String));
       row2.Cells.Add(new CellDfn(DateTime.Now, cellDataType: CellDataType.Date));
       row2.Cells.Add(new CellDfn(0.0222, cellDataType: CellDataType.Percentage));
+      row2.Cells.Add(new CellDfn("08:01", cellDataType: CellDataType.Time));
       worksheet1Dfn.Rows.Add(row2);
 
       // Second sheet
@@ -255,6 +265,7 @@ namespace ConsoleApp
       worksheet2Dfn.ColumnHeadings.Cells.Add(new CellDfn("Rate"));
       worksheet2Dfn.ColumnHeadings.Cells.Add(new CellDfn("Postal Code"));
       worksheet2Dfn.ColumnHeadings.Cells.Add(new CellDfn("Field goal percentage"));
+      worksheet2Dfn.ColumnHeadings.Cells.Add(new CellDfn("Practice Time"));
       workbookDfn.Worksheets.Add(worksheet2Dfn);
 
       // Third sheet
@@ -268,6 +279,7 @@ namespace ConsoleApp
       row31.Cells.Add(new CellDfn(DateTime.Now, cellDataType: CellDataType.Date));
       row31.Cells.Add(new CellDfn(true, cellDataType: CellDataType.Boolean));
       row31.Cells.Add(new CellDfn(0.11, cellDataType: CellDataType.Percentage));
+      row31.Cells.Add(new CellDfn("08:01", cellDataType: CellDataType.Time));
       worksheet3Dfn.Rows.Add(row31);
       var row32 = new RowDfn();
       row32.Cells.Add(new CellDfn("Bob", cellDataType: CellDataType.String));
@@ -276,7 +288,8 @@ namespace ConsoleApp
       row32.Cells.Add(new CellDfn("01080", cellDataType: CellDataType.String));
       row32.Cells.Add(new CellDfn(DateTime.Now, cellDataType: CellDataType.Date));
       row32.Cells.Add(new CellDfn(false, cellDataType: CellDataType.Boolean));
-      row31.Cells.Add(new CellDfn(22, cellDataType: CellDataType.Percentage));
+      row32.Cells.Add(new CellDfn(22, cellDataType: CellDataType.Percentage));
+      row32.Cells.Add(new CellDfn("08:02", cellDataType: CellDataType.Time));
       worksheet3Dfn.Rows.Add(row32);
 
       SpreadsheetWriter spreadsheetWriter = new SpreadsheetWriter(streamWriter.BaseStream, workbookDfn);

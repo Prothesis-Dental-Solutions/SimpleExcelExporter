@@ -429,6 +429,10 @@
       {
         cellFormat.NumberFormatId = 10U;
       }
+      else if (cellDfn.CellDataType == CellDataType.Time)
+      {
+        cellFormat.NumberFormatId = 20U; // H:mm
+      }
       else
       {
         cellFormat.NumberFormatId = 0U;

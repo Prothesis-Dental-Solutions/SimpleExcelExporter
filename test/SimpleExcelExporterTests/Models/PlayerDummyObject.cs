@@ -21,6 +21,11 @@
     [Index(1)]
     public string? PlayerName { get; set; }
 
+    [CellDefinition(CellDataType.Time)]
+    [Header(typeof(PlayerDummyObjectRes), "PracticeTimeColumnName")]
+    [Index(8)]
+    public string? PracticeTime { get; set; }
+
     [CellDefinition(CellDataType.Number)]
     [Header(typeof(PlayerDummyObjectRes), "NumberOfVictoryColumnName")]
     [Index(3)]
