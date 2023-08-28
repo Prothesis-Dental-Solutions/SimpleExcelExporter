@@ -9,11 +9,11 @@ Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "Solution Items", "Solution 
 	ProjectSection(SolutionItems) = preProject
 		.editorconfig = .editorconfig
 		.gitignore = .gitignore
-		azure-pipelines.yml = azure-pipelines.yml
-		dotnet-version-updater.js = dotnet-version-updater.js
 		Prothesis-tests.ruleset = Prothesis-tests.ruleset
 		Prothesis.ruleset = Prothesis.ruleset
 		stylecop.json = stylecop.json
+		.github\workflows\codeql-analysis.yml = .github\workflows\codeql-analysis.yml
+		.github\workflows\dotnet.yml = .github\workflows\dotnet.yml
 	EndProjectSection
 EndProject
 Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "SimpleExcelExporter", "src\SimpleExcelExporter\SimpleExcelExporter.csproj", "{CBD5D1C4-D179-471B-B115-A38E9179244A}"

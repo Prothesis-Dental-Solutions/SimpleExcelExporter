@@ -133,6 +133,15 @@ namespace SimpleExcelExporter.Tests.Models {
         }
         
         /// <summary>
+        ///   Looks up a localized string similar to Time of practice.
+        /// </summary>
+        public static string PracticeTimeColumnName {
+            get {
+                return ResourceManager.GetString("PracticeTimeColumnName", resourceCulture);
+            }
+        }
+        
+        /// <summary>
         ///   Looks up a localized string similar to Salary.
         /// </summary>
         public static string SalaryColumnName {

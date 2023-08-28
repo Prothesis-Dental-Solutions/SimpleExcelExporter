@@ -147,4 +147,7 @@
   <data name="FieldGoalPercentageColumnName" xml:space="preserve">
     <value>FieldGoalPercentage</value>
   </data>
+  <data name="PracticeTimeColumnName" xml:space="preserve">
+    <value>Time of practice</value>
+  </data>
 </root>
