@@ -24,7 +24,7 @@
     [CellDefinition(CellDataType.Time)]
     [Header(typeof(PlayerDummyObjectRes), "PracticeTimeColumnName")]
     [Index(8)]
-    public string? PracticeTime { get; set; }
+    public TimeSpan? PracticeTime { get; set; }
 
     [CellDefinition(CellDataType.Number)]
     [Header(typeof(PlayerDummyObjectRes), "NumberOfVictoryColumnName")]
