@@ -2,6 +2,7 @@
 {
   using System;
   using System.Collections.Generic;
+  using System.Globalization;
   using System.IO;
   using System.Linq;
   using System.Reflection;
@@ -298,6 +299,12 @@
           stringValue = XmlStringHelper.Sanitize(stringValue);
           cell.CellValue = new CellValue(stringValue);
           cell.DataType = new EnumValue<CellValues>(CellValues.String);
+        }
+        else if (cellDfn.Value is TimeSpan timeSpanValue)
+        {
+          // Excel saves time in seconds divided by maximum seconds of a day
+          double cellValue = timeSpanValue.TotalSeconds / 86400; // 86400 = 24 * 60 *60
+          cell.CellValue = new CellValue(cellValue.ToString(CultureInfo.InvariantCulture));
         }
         else
         {

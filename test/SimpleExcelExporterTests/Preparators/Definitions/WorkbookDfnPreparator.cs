@@ -31,7 +31,7 @@
       row1.Cells.Add(new CellDfn("01090", cellDataType: CellDataType.String));
       row1.Cells.Add(new CellDfn(DateTime.Now, cellDataType: CellDataType.Date));
       row1.Cells.Add(new CellDfn(0.1111, cellDataType: CellDataType.Percentage));
-      row1.Cells.Add(new CellDfn("09:01", cellDataType: CellDataType.Time));
+      row1.Cells.Add(new CellDfn(new TimeSpan(9, 1, 0), cellDataType: CellDataType.Time));
       worksheet1Dfn.Rows.Add(row1);
       var row2 = new RowDfn();
       row2.Cells.Add(new CellDfn("Bob", cellDataType: CellDataType.String));
@@ -40,7 +40,7 @@
       row2.Cells.Add(new CellDfn("01080", cellDataType: CellDataType.String));
       row2.Cells.Add(new CellDfn(DateTime.Now, cellDataType: CellDataType.Date));
       row2.Cells.Add(new CellDfn(0.2222, cellDataType: CellDataType.Percentage));
-      row2.Cells.Add(new CellDfn("09:02", cellDataType: CellDataType.Time));
+      row2.Cells.Add(new CellDfn(new TimeSpan(9, 2, 0), cellDataType: CellDataType.Time));
       worksheet1Dfn.Rows.Add(row2);
 
       return workbookDfn;

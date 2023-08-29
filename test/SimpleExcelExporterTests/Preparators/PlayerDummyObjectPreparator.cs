@@ -9,7 +9,7 @@
     {
       PlayerCode = null,
       PlayerName = "Player\bName1<a href=\"https://www.google.com\" /> &lt;b /&gt; \r\n\t",
-      PracticeTime = "09:01",
+      PracticeTime = new TimeSpan(9, 1, 0),
       Size = 1.93d,
       DateOfBirth = new DateTime(1974, 02, 01),
       IsActiveFlag = true,
@@ -24,7 +24,7 @@
     {
       PlayerCode = "02",
       PlayerName = "PlayerName2",
-      PracticeTime = "09:02",
+      PracticeTime = new TimeSpan(9, 2, 0),
       Size = 1.72d,
       DateOfBirth = new DateTime(1990, 10, 13),
       IsActiveFlag = true,
@@ -39,7 +39,7 @@
     {
       PlayerCode = "03",
       PlayerName = "PlayerName3",
-      PracticeTime = "09:03",
+      PracticeTime = new TimeSpan(9, 3, 0),
       Size = 1.85d,
       DateOfBirth = new DateTime(1976, 3, 1),
       IsActiveFlag = true,
@@ -55,7 +55,7 @@
     {
       PlayerCode = "04",
       PlayerName = "PlayerName4",
-      PracticeTime = "09:04",
+      PracticeTime = new TimeSpan(9, 4, 0),
       Size = 1.79d,
       DateOfBirth = new DateTime(1979, 3, 1),
       IsActiveFlag = false,
