@@ -16,6 +16,8 @@
 
   public class SpreadsheetWriter
   {
+    private static IDictionary<string, Attribute?> _cachedAttributes = new Dictionary<string, Attribute?>();
+
     private readonly Stream _stream;
 
     private readonly Stylesheet _stylesheet;
@@ -85,22 +87,12 @@
 
         var worksheetDfn = new WorksheetDfn(sheetName);
 
-        IDictionary<string, IndexAttribute> indexAttributes = new Dictionary<string, IndexAttribute>();
-        IDictionary<string, CellDefinitionAttribute> cellDefinitionAttributes = new Dictionary<string, CellDefinitionAttribute>();
-        IDictionary<string, HeaderAttribute> headerAttributes = new Dictionary<string, HeaderAttribute>();
-
         if (teamTypePropertyInfo.GetValue(team) is IEnumerable<object?> playersEnumerable)
         {
-          var players = playersEnumerable as object?[] ?? playersEnumerable.ToArray();
+          object?[] players = playersEnumerable as object?[] ?? playersEnumerable.ToArray();
 
-          // Generate Attribute's dictionary only once
-          var firstPlayer = players.FirstOrDefault();
-
-          RetrievePropertiesAttributes(indexAttributes, cellDefinitionAttributes, headerAttributes, firstPlayer);
-
-          // Add Data
+          // Add data (header lines + data lines)
           bool headerAttributeFlag = true;
-
           if (!players.Any())
           {
             // Create fake cell with warning message
@@ -112,20 +104,19 @@
           }
           else
           {
-            foreach (var player in players)
+            foreach (object? player in players)
             {
               if (player != null)
               {
                 var playerType = player.GetType();
-                var playerTypePropertyInfos = playerType.GetProperties();
+                PropertyInfo[] playerTypePropertyInfos = playerType.GetProperties();
                 RowDfn rowDfn = new RowDfn();
                 worksheetDfn.Rows.Add(rowDfn);
 
                 foreach (var playerTypePropertyInfo in playerTypePropertyInfos)
                 {
-                  cellDefinitionAttributes.TryGetValue(playerTypePropertyInfo.Name, out var cellDefinitionAttribute);
-                  indexAttributes.TryGetValue(playerTypePropertyInfo.Name, out var indexAttribute);
-
+                  var cellDefinitionAttribute = GetAttributeFrom<CellDefinitionAttribute>(playerTypePropertyInfo);
+                  var indexAttribute = GetAttributeFrom<IndexAttribute>(playerTypePropertyInfo);
                   var index = 0;
                   if (indexAttribute != null)
                   {
@@ -134,7 +125,7 @@
 
                   if (headerAttributeFlag)
                   {
-                    headerAttributes.TryGetValue(playerTypePropertyInfo.Name, out HeaderAttribute? headerAttribute);
+                    var headerAttribute = GetAttributeFrom<HeaderAttribute>(playerTypePropertyInfo);
                     if (headerAttribute != null)
                     {
                       var headerCellDfn = new CellDfn(headerAttribute.Text, index: index);
@@ -183,65 +174,6 @@
       return workbookDfn;
     }
 
-    private static void RetrievePropertiesAttributes(
-      IDictionary<string, IndexAttribute> indexAttributes,
-      IDictionary<string, CellDefinitionAttribute> cellDefinitionAttributes,
-      IDictionary<string, HeaderAttribute> headerAttributes,
-      object? player,
-      int indexIterated = 0)
-    {
-      if (player != null)
-      {
-        var playerType = player.GetType();
-
-        foreach (var playerTypePropertyInfo in playerType.GetProperties())
-        {
-          var cellDefinitionAttribute = GetAttributeFrom<CellDefinitionAttribute>(playerTypePropertyInfo);
-          var indexAttribute = GetAttributeFrom<IndexAttribute>(playerTypePropertyInfo);
-          var headerAttribute = GetAttributeFrom<HeaderAttribute>(playerTypePropertyInfo);
-          var columnTypeAttribute = GetAttributeFrom<ColumnTypeAttribute>(playerTypePropertyInfo);
-
-          var propertyName = playerTypePropertyInfo.Name;
-          if (indexIterated > 0)
-          {
-            propertyName = propertyName + indexIterated.ToString();
-          }
-
-          if (cellDefinitionAttribute != null)
-          {
-            cellDefinitionAttributes.Add(propertyName, cellDefinitionAttribute);
-          }
-
-          if (indexAttribute != null)
-          {
-            var newIndexAttribute = new IndexAttribute(indexAttribute.Index + indexIterated);
-            indexAttributes.Add(propertyName, newIndexAttribute);
-          }
-
-          if (headerAttribute != null)
-          {
-            headerAttributes.Add(propertyName, headerAttribute);
-          }
-
-          if (columnTypeAttribute?.ColumnType == ColumnType.Collection)
-          {
-            // Retrieve child object
-            if (playerTypePropertyInfo.GetValue(player) is IEnumerable<object?> childPlayersEnumerable)
-            {
-              int i = 0;
-              var childPlayers = childPlayersEnumerable as object?[] ?? childPlayersEnumerable.ToArray();
-              foreach (var childPlayer in childPlayers)
-              {
-                //var firstChildPlayer = childplayers.FirstOrDefault();
-                RetrievePropertiesAttributes(indexAttributes, cellDefinitionAttributes, headerAttributes, childPlayer, i);
-                i++;
-              }
-            }
-          }
-        }
-      }
-    }
-
     private static void GenerateWorksheetPartContent(WorksheetPart worksheetPart, SheetData sheetData)
     {
       var worksheet = new Worksheet();
@@ -269,10 +201,18 @@
     private static T? GetAttributeFrom<T>(PropertyInfo property)
       where T : Attribute
     {
+      string key = $"{property.Module.MetadataToken.ToString()}_{property.MetadataToken.ToString()}_{typeof(T).Name}";
+      if (_cachedAttributes.TryGetValue(key, out var cachedAttribute))
+      {
+        return (T?)cachedAttribute;
+      }
+
       var attrType = typeof(T);
 
       // property is expected to be not null because instance and property
-      return (T?)property.GetCustomAttributes(attrType, false).FirstOrDefault();
+      var attribute = (T?)property.GetCustomAttributes(attrType, false).FirstOrDefault();
+      _cachedAttributes.Add(key, attribute);
+      return attribute;
     }
 
     private Cell CreateCell(CellDfn cellDfn)
@@ -440,9 +380,9 @@
     private uint CreateOrGetStylIndex(CellDfn cellDfn)
     {
       int styleHashCode = cellDfn.GetStyleHashCode();
-      if (Table.ContainsKey(styleHashCode))
+      if (Table.TryGetValue(styleHashCode, out var stylIndex))
       {
-        return Table[styleHashCode];
+        return stylIndex;
       }
 
       var cellFormat = new CellFormat
@@ -539,7 +479,7 @@
         }
       }
 
-      if (_workbookDfn?.Worksheets?.Any() == false)
+      if (_workbookDfn.Worksheets.Any() == false)
       {
         throw new DefinitionException("WorkBook could not be null or empty.");
       }
