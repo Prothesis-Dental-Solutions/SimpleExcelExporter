@@ -50,5 +50,14 @@
     [Header(typeof(PlayerRes), "SalaryColumnName")]
     [Index(7)]
     public decimal? Salary { get; set; }
+
+    [ColumnType(ColumnType.Collection)]
+    [Index(9)]
+    public ICollection<PlayerChild>? PlayerChilds { get; set; }
+
+    [CellDefinition(CellDataType.Boolean)]
+    [Header(typeof(PlayerRes), "SizeColumnName")]
+    [Index(10)]
+    public decimal? Salary2 { get; set; }
   }
 }

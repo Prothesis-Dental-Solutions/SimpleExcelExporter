@@ -2,6 +2,7 @@
 {
   using System;
 
+  [AttributeUsage(AttributeTargets.Property)]
   public abstract class ResourceBaseAttribute : Attribute
   {
     protected ResourceBaseAttribute(Type resourceType, string resourceName)

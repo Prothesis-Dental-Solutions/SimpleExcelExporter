@@ -3,6 +3,7 @@
 namespace ConsoleApp
 {
   using System;
+  using System.Collections.Generic;
   using System.Diagnostics;
   using System.IO;
   using SimpleExcelExporter;
@@ -17,11 +18,11 @@ namespace ConsoleApp
       var tempDi = new DirectoryInfo($"ExampleOutput-{n.Year - 2000:00}-{n.Month:00}-{n.Day:00}-{n.Hour:00}{n.Minute:00}{n.Second:00}");
       tempDi.Create();
 
-      GenerateSpreadSheetFromWorkbookDfn(tempDi);
-      GenerateSpreadSheetFromAnnotatedDataEmpty(tempDi);
+      //GenerateSpreadSheetFromWorkbookDfn(tempDi);
+      //GenerateSpreadSheetFromAnnotatedDataEmpty(tempDi);
       GenerateSpreadSheetFromAnnotatedData(tempDi);
-      GenerateBigSpreadsheetFromAnnotatedData(tempDi);
-      GenerateBigSpreadsheetFromWorkBookDfn(tempDi);
+      //GenerateBigSpreadsheetFromAnnotatedData(tempDi);
+      //GenerateBigSpreadsheetFromWorkBookDfn(tempDi);
     }
 
     private static void GenerateBigSpreadsheetFromAnnotatedData(DirectoryInfo tempDi)
@@ -63,6 +64,11 @@ namespace ConsoleApp
           NumberOfVictory = rnd.Next(0, 100),
           FieldGoalPercentage = Convert.ToDouble(rnd.Next(0, 100)) / 100,
           Salary = Convert.ToDecimal(rnd.Next(2000, 1000000) + 0.12654984m),
+          PlayerChilds = new List<PlayerChild>
+          {
+            new () { FirstName = "FirstName1", Age = 1 },
+            new () { FirstName = "FirstName2", Age = 2 },
+          },
         };
         team.Players.Add(player);
       }
@@ -161,6 +167,12 @@ namespace ConsoleApp
             NumberOfVictory = 45,
             FieldGoalPercentage = 0.1111,
             Salary = 2000.5m,
+            PlayerChilds = new List<PlayerChild>
+            {
+              new () { FirstName = "FirstName1", Age = 11 },
+              new () { FirstName = "FirstName2", Age = 22 },
+              new () { FirstName = "FirstName1", Age = 33 },
+            },
           },
           new Player
           {
@@ -173,6 +185,10 @@ namespace ConsoleApp
             NumberOfVictory = 52,
             FieldGoalPercentage = 0.222,
             Salary = 2141.5452m,
+            PlayerChilds = new List<PlayerChild>
+            {
+              new () { FirstName = "FirstName1", Age = 11 },
+            },
           },
           new Player
           {

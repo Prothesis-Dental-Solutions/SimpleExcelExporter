@@ -96,33 +96,7 @@
           // Generate Attribute's dictionary only once
           var firstPlayer = players.FirstOrDefault();
 
-          if (firstPlayer != null)
-          {
-            var playerType = firstPlayer.GetType();
-            var playerTypePropertyInfos = playerType.GetProperties();
-
-            foreach (var playerTypePropertyInfo in playerTypePropertyInfos)
-            {
-              var cellDefinitionAttribute = GetAttributeFrom<CellDefinitionAttribute>(playerTypePropertyInfo);
-              var indexAttribute = GetAttributeFrom<IndexAttribute>(playerTypePropertyInfo);
-              var headerAttribute = GetAttributeFrom<HeaderAttribute>(playerTypePropertyInfo);
-
-              if (cellDefinitionAttribute != null)
-              {
-                cellDefinitionAttributes.Add(playerTypePropertyInfo.Name, cellDefinitionAttribute);
-              }
-
-              if (indexAttribute != null)
-              {
-                indexAttributes.Add(playerTypePropertyInfo.Name, indexAttribute);
-              }
-
-              if (headerAttribute != null)
-              {
-                headerAttributes.Add(playerTypePropertyInfo.Name, headerAttribute);
-              }
-            }
-          }
+          RetrievePropertiesAttributes(indexAttributes, cellDefinitionAttributes, headerAttributes, firstPlayer);
 
           // Add Data
           bool headerAttributeFlag = true;
@@ -193,7 +167,7 @@
         }
 
         workbookDfn.Worksheets.Add(worksheetDfn);
-        i += 1;
+        i++;
       }
 
       foreach (WorksheetDfn worksheet in workbookDfn.Worksheets)
@@ -207,6 +181,65 @@
       }
 
       return workbookDfn;
+    }
+
+    private static void RetrievePropertiesAttributes(
+      IDictionary<string, IndexAttribute> indexAttributes,
+      IDictionary<string, CellDefinitionAttribute> cellDefinitionAttributes,
+      IDictionary<string, HeaderAttribute> headerAttributes,
+      object? player,
+      int indexIterated = 0)
+    {
+      if (player != null)
+      {
+        var playerType = player.GetType();
+
+        foreach (var playerTypePropertyInfo in playerType.GetProperties())
+        {
+          var cellDefinitionAttribute = GetAttributeFrom<CellDefinitionAttribute>(playerTypePropertyInfo);
+          var indexAttribute = GetAttributeFrom<IndexAttribute>(playerTypePropertyInfo);
+          var headerAttribute = GetAttributeFrom<HeaderAttribute>(playerTypePropertyInfo);
+          var columnTypeAttribute = GetAttributeFrom<ColumnTypeAttribute>(playerTypePropertyInfo);
+
+          var propertyName = playerTypePropertyInfo.Name;
+          if (indexIterated > 0)
+          {
+            propertyName = propertyName + indexIterated.ToString();
+          }
+
+          if (cellDefinitionAttribute != null)
+          {
+            cellDefinitionAttributes.Add(propertyName, cellDefinitionAttribute);
+          }
+
+          if (indexAttribute != null)
+          {
+            var newIndexAttribute = new IndexAttribute(indexAttribute.Index + indexIterated);
+            indexAttributes.Add(propertyName, newIndexAttribute);
+          }
+
+          if (headerAttribute != null)
+          {
+            headerAttributes.Add(propertyName, headerAttribute);
+          }
+
+          if (columnTypeAttribute?.ColumnType == ColumnType.Collection)
+          {
+            // Retrieve child object
+            if (playerTypePropertyInfo.GetValue(player) is IEnumerable<object?> childPlayersEnumerable)
+            {
+              int i = 0;
+              var childPlayers = childPlayersEnumerable as object?[] ?? childPlayersEnumerable.ToArray();
+              foreach (var childPlayer in childPlayers)
+              {
+                //var firstChildPlayer = childplayers.FirstOrDefault();
+                RetrievePropertiesAttributes(indexAttributes, cellDefinitionAttributes, headerAttributes, childPlayer, i);
+                i++;
+              }
+            }
+          }
+        }
+      }
     }
 
     private static void GenerateWorksheetPartContent(WorksheetPart worksheetPart, SheetData sheetData)
@@ -446,7 +479,7 @@
       }
 
       var index = _stylesheet.CellFormats!.Count!.Value;
-      _stylesheet.CellFormats!.Count!.Value += 1U;
+      _stylesheet.CellFormats!.Count!.Value++;
       _stylesheet.CellFormats.AppendChild(cellFormat);
       Table.Add(styleHashCode, index);
 
@@ -473,7 +506,7 @@
         sheets.AppendChild(sheet);
         var sheetData = GenerateSheetDataForDetails(worksheet);
         GenerateWorksheetPartContent(worksheetPart, sheetData);
-        count += 1U;
+        count++;
       }
     }
 
@@ -506,9 +539,9 @@
         }
       }
 
-      if (_workbookDfn != null && _workbookDfn.Worksheets != null && !_workbookDfn.Worksheets.Any())
+      if (_workbookDfn?.Worksheets?.Any() == false)
       {
-        throw new DefinitionException($"WorkBook could not be null or empty.");
+        throw new DefinitionException("WorkBook could not be null or empty.");
       }
     }
   }
