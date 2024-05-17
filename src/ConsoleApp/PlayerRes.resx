@@ -136,7 +136,7 @@
     <value>Size</value>
   </data>
   <data name="SalaryColumnName" xml:space="preserve">
-    <value>Salary</value>
+    <value>Salary {0}</value>
   </data>
   <data name="FieldGoalPercentageColumnName" xml:space="preserve">
     <value>Field goal percentage</value>

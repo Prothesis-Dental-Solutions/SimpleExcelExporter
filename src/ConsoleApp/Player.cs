@@ -1,7 +1,6 @@
 ﻿namespace ConsoleApp
 {
   using System;
-  using System.Collections.Generic;
   using SimpleExcelExporter.Annotations;
   using SimpleExcelExporter.Definitions;
 
@@ -49,7 +48,7 @@
 
     [CellDefinition(CellDataType.Number)]
     // TODO // ex value : "Tarif {0} {1} HT" qu'on stocke dans le resx de PlayerName comme maintenant
-    [Header(typeof(PlayerRes), "SalaryColumnName"/*, nameof(HeaderName0), nameof(HeaderName1)*/)]
+    [Header(typeof(PlayerRes), "SalaryColumnName", nameof(HeaderName0) /*, nameof(HeaderName1)*/)]
     [Index(7)]
     public decimal? Salary { get; set; }
 
@@ -62,9 +61,10 @@
     // [Index(10)]
     // public decimal? Salary2 { get; set; }
 
-    // TODO - IngoreFromSpreadSheet
+    [IgnoreFromSpreadSheet]
     public string? HeaderName0 { get; set; }
 
+    [IgnoreFromSpreadSheet]
     public string? HeaderName1 { get; set; }
   }
 }

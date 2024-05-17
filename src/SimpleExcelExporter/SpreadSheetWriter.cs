@@ -117,38 +117,48 @@
                 {
                   var cellDefinitionAttribute = GetAttributeFrom<CellDefinitionAttribute>(playerTypePropertyInfo);
                   var indexAttribute = GetAttributeFrom<IndexAttribute>(playerTypePropertyInfo);
-                  var index = 0;
-                  if (indexAttribute != null)
+                  var ignoreFromSpreadSheetAttribute = GetAttributeFrom<IgnoreFromSpreadSheetAttribute>(playerTypePropertyInfo);
+                  if (ignoreFromSpreadSheetAttribute?.IgnoreFlag != true)
                   {
-                    index = indexAttribute.Index;
-                  }
-
-                  if (headerAttributeFlag)
-                  {
-                    var headerAttribute = GetAttributeFrom<HeaderAttribute>(playerTypePropertyInfo);
-                    if (headerAttribute != null)
+                    var index = 0;
+                    if (indexAttribute != null)
                     {
-                      var headerCellDfn = new CellDfn(headerAttribute.Text, index: index);
-                      worksheetDfn.ColumnHeadings.Cells.Add(headerCellDfn);
+                      index = indexAttribute.Index;
                     }
-                  }
 
-                  CellDfn cellDfn;
-                  if (cellDefinitionAttribute != null)
-                  {
-                    cellDfn = new CellDfn(
-                      playerTypePropertyInfo.GetValue(player),
-                      cellDataType: cellDefinitionAttribute.CellDataType,
-                      index: index);
-                  }
-                  else
-                  {
-                    cellDfn = new CellDfn(
-                      playerTypePropertyInfo.GetValue(player),
-                      index: index);
-                  }
+                    if (headerAttributeFlag)
+                    {
+                      var headerAttribute = GetAttributeFrom<HeaderAttribute>(playerTypePropertyInfo);
+                      if (headerAttribute != null)
+                      {
+                        var text = headerAttribute.Text;
+                        if (headerAttribute.TextToAddToHeader != null)
+                        {
+                          text = string.Format(text, playerType.GetProperty(headerAttribute.TextToAddToHeader).GetValue(player, null).ToString());
+                        }
 
-                  rowDfn.Cells.Add(cellDfn);
+                        var headerCellDfn = new CellDfn(text, index: index);
+                        worksheetDfn.ColumnHeadings.Cells.Add(headerCellDfn);
+                      }
+                    }
+
+                    CellDfn cellDfn;
+                    if (cellDefinitionAttribute != null)
+                    {
+                      cellDfn = new CellDfn(
+                        playerTypePropertyInfo.GetValue(player),
+                        cellDataType: cellDefinitionAttribute.CellDataType,
+                        index: index);
+                    }
+                    else
+                    {
+                      cellDfn = new CellDfn(
+                        playerTypePropertyInfo.GetValue(player),
+                        index: index);
+                    }
+
+                    rowDfn.Cells.Add(cellDfn);
+                  }
                 }
 
                 headerAttributeFlag = false;
@@ -201,7 +211,7 @@
     private static T? GetAttributeFrom<T>(PropertyInfo property)
       where T : Attribute
     {
-      string key = $"{property.Module.MetadataToken.ToString()}_{property.MetadataToken.ToString()}_{typeof(T).Name}";
+      string key = $"{property.Module.MetadataToken}_{property.MetadataToken}_{typeof(T).Name}";
       if (_cachedAttributes.TryGetValue(key, out var cachedAttribute))
       {
         return (T?)cachedAttribute;

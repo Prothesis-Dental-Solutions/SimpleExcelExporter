@@ -124,7 +124,7 @@ namespace ConsoleApp {
         }
         
         /// <summary>
-        ///   Looks up a localized string similar to Salary.
+        ///   Looks up a localized string similar to Salary {0}.
         /// </summary>
         public static string SalaryColumnName {
             get {
