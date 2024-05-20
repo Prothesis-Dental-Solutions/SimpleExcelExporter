@@ -37,9 +37,9 @@
   </ItemGroup>
 
   <ItemGroup>
-    <EmbeddedResource Update="PlayerChildRes.resx">
+    <EmbeddedResource Update="ChildOfPlayerRes.resx">
       <Generator>PublicResXFileCodeGenerator</Generator>
-      <LastGenOutput>PlayerChildRes.Designer.cs</LastGenOutput>
+      <LastGenOutput>ChildOfPlayerRes.Designer.cs</LastGenOutput>
     </EmbeddedResource>
     <EmbeddedResource Update="TeamRes.resx">
       <Generator>PublicResXFileCodeGenerator</Generator>
@@ -52,10 +52,10 @@
   </ItemGroup>
 
   <ItemGroup>
-    <Compile Update="PlayerChildRes.Designer.cs">
+    <Compile Update="ChildOfPlayerRes.Designer.cs">
       <DesignTime>True</DesignTime>
       <AutoGen>True</AutoGen>
-      <DependentUpon>PlayerChildRes.resx</DependentUpon>
+      <DependentUpon>ChildOfPlayerRes.resx</DependentUpon>
     </Compile>
     <Compile Update="TeamRes.Designer.cs">
       <DesignTime>True</DesignTime>

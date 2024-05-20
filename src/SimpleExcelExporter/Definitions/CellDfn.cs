@@ -7,7 +7,7 @@
     public CellDfn(
       object value,
       CellDataType cellDataType = CellDataType.String,
-      int index = 0)
+      decimal index = 0)
     {
       CellDataType = cellDataType;
       Index = index;
@@ -26,7 +26,7 @@
     /// </summary>
     public object? Value { get; }
 
-    public int Index { get; }
+    public decimal Index { get; }
 
     public int GetStyleHashCode()
     {

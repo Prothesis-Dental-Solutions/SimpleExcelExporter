@@ -60,8 +60,8 @@
 
       // Check
       Assert.AreNotEqual(memoryStream.Length, 0);
-      // expected 1 sheet, 5 rows (1 header + 4 players), 10 cells 
-      Validate(memoryStream, 1, 5, 11);
+      // expected 1 sheet, 5 rows (1 header + 4 players + 2 childs of player), 15 cells 
+      Validate(memoryStream, 1, 5, 15);
 
       // Prepare an empty object - two properties with the same index column
       var teamWithSameColumnIndex = TeamWithSameColumnIndexDummyObjectPreparator.First();

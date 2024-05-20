@@ -8,7 +8,7 @@
 // </auto-generated>
 //------------------------------------------------------------------------------
 
-namespace ConsoleApp {
+namespace SimpleExcelExporter.Tests.Models {
     using System;
     
     
@@ -22,14 +22,14 @@ namespace ConsoleApp {
     [global::System.CodeDom.Compiler.GeneratedCodeAttribute("System.Resources.Tools.StronglyTypedResourceBuilder", "17.0.0.0")]
     [global::System.Diagnostics.DebuggerNonUserCodeAttribute()]
     [global::System.Runtime.CompilerServices.CompilerGeneratedAttribute()]
-    public class PlayerChildRes {
+    public class ChildOfPlayerDummyObjectRes {
         
         private static global::System.Resources.ResourceManager resourceMan;
         
         private static global::System.Globalization.CultureInfo resourceCulture;
         
         [global::System.Diagnostics.CodeAnalysis.SuppressMessageAttribute("Microsoft.Performance", "CA1811:AvoidUncalledPrivateCode")]
-        internal PlayerChildRes() {
+        internal ChildOfPlayerDummyObjectRes() {
         }
         
         /// <summary>
@@ -39,7 +39,7 @@ namespace ConsoleApp {
         public static global::System.Resources.ResourceManager ResourceManager {
             get {
                 if (object.ReferenceEquals(resourceMan, null)) {
-                    global::System.Resources.ResourceManager temp = new global::System.Resources.ResourceManager("ConsoleApp.PlayerChildRes", typeof(PlayerChildRes).Assembly);
+                    global::System.Resources.ResourceManager temp = new global::System.Resources.ResourceManager("SimpleExcelExporter.Tests.Models.ChildOfPlayerDummyObjectRes", typeof(ChildOfPlayerDummyObjectRes).Assembly);
                     resourceMan = temp;
                 }
                 return resourceMan;
@@ -63,18 +63,18 @@ namespace ConsoleApp {
         /// <summary>
         ///   Looks up a localized string similar to Child Age.
         /// </summary>
-        public static string ChildAge {
+        public static string ChildAgeColumnName {
             get {
-                return ResourceManager.GetString("ChildAge", resourceCulture);
+                return ResourceManager.GetString("ChildAgeColumnName", resourceCulture);
             }
         }
         
         /// <summary>
         ///   Looks up a localized string similar to Child FirstName.
         /// </summary>
-        public static string ChildFirstName {
+        public static string ChildFirstNameColumnName {
             get {
-                return ResourceManager.GetString("ChildFirstName", resourceCulture);
+                return ResourceManager.GetString("ChildFirstNameColumnName", resourceCulture);
             }
         }
     }

@@ -112,54 +112,7 @@
                 PropertyInfo[] playerTypePropertyInfos = playerType.GetProperties();
                 RowDfn rowDfn = new RowDfn();
                 worksheetDfn.Rows.Add(rowDfn);
-
-                foreach (var playerTypePropertyInfo in playerTypePropertyInfos)
-                {
-                  var cellDefinitionAttribute = GetAttributeFrom<CellDefinitionAttribute>(playerTypePropertyInfo);
-                  var indexAttribute = GetAttributeFrom<IndexAttribute>(playerTypePropertyInfo);
-                  var ignoreFromSpreadSheetAttribute = GetAttributeFrom<IgnoreFromSpreadSheetAttribute>(playerTypePropertyInfo);
-                  if (ignoreFromSpreadSheetAttribute?.IgnoreFlag != true)
-                  {
-                    var index = 0;
-                    if (indexAttribute != null)
-                    {
-                      index = indexAttribute.Index;
-                    }
-
-                    if (headerAttributeFlag)
-                    {
-                      var headerAttribute = GetAttributeFrom<HeaderAttribute>(playerTypePropertyInfo);
-                      if (headerAttribute != null)
-                      {
-                        var text = headerAttribute.Text;
-                        if (headerAttribute.TextToAddToHeader != null)
-                        {
-                          text = string.Format(text, playerType.GetProperty(headerAttribute.TextToAddToHeader).GetValue(player, null).ToString());
-                        }
-
-                        var headerCellDfn = new CellDfn(text, index: index);
-                        worksheetDfn.ColumnHeadings.Cells.Add(headerCellDfn);
-                      }
-                    }
-
-                    CellDfn cellDfn;
-                    if (cellDefinitionAttribute != null)
-                    {
-                      cellDfn = new CellDfn(
-                        playerTypePropertyInfo.GetValue(player),
-                        cellDataType: cellDefinitionAttribute.CellDataType,
-                        index: index);
-                    }
-                    else
-                    {
-                      cellDfn = new CellDfn(
-                        playerTypePropertyInfo.GetValue(player),
-                        index: index);
-                    }
-
-                    rowDfn.Cells.Add(cellDfn);
-                  }
-                }
+                AddCellsToRowFromObjectPropertyInfos(worksheetDfn, headerAttributeFlag, player, playerType, playerTypePropertyInfos, rowDfn, 0, 0, 0);
 
                 headerAttributeFlag = false;
               }
@@ -182,6 +135,101 @@
       }
 
       return workbookDfn;
+    }
+
+    private static void AddCellsToRowFromObjectPropertyInfos(
+      WorksheetDfn worksheetDfn,
+      bool headerAttributeFlag,
+      object? player,
+      Type playerType,
+      PropertyInfo[] playerTypePropertyInfos,
+      RowDfn rowDfn,
+      int iteration,
+      int deep,
+      decimal parentIndex)
+    {
+      foreach (var playerTypePropertyInfo in playerTypePropertyInfos)
+      {
+        var cellDefinitionAttribute = GetAttributeFrom<CellDefinitionAttribute>(playerTypePropertyInfo);
+        var indexAttribute = GetAttributeFrom<IndexAttribute>(playerTypePropertyInfo);
+        var ignoreFromSpreadSheetAttribute = GetAttributeFrom<IgnoreFromSpreadSheetAttribute>(playerTypePropertyInfo);
+        var columnTypeAttribute = GetAttributeFrom<ColumnTypeAttribute>(playerTypePropertyInfo);
+
+        // Index management
+        var index = parentIndex;
+        var power = (int)Math.Pow(10, deep);
+
+        var iterationIncrement = 0;
+        if (iteration > 0)
+        {
+          index += decimal.Divide(iteration, power);
+          iterationIncrement = 1;
+        }
+
+        if (indexAttribute != null)
+        {
+          power = (int)Math.Pow(10, deep + iterationIncrement);
+          index += decimal.Divide(indexAttribute.Index, power);
+        }
+
+        if (columnTypeAttribute?.ColumnType == ColumnType.Collection)
+        {
+          // Retrieve child object
+          if (playerTypePropertyInfo.GetValue(player) is IEnumerable<object> childPlayersEnumerable)
+          {
+            var childDeep = deep + childPlayersEnumerable.Count().ToString().Length;
+            var currentIteration = 1;
+            foreach (var childPlayer in childPlayersEnumerable as object[] ?? childPlayersEnumerable.ToArray())
+            {
+              Type childPlayerType = childPlayer.GetType();
+              PropertyInfo[] childPlayerTypePropertyInfos = childPlayerType.GetProperties();
+              AddCellsToRowFromObjectPropertyInfos(worksheetDfn, headerAttributeFlag, childPlayer, childPlayerType, childPlayerTypePropertyInfos, rowDfn, currentIteration, childDeep + iterationIncrement, index);
+              currentIteration++;
+            }
+          }
+        }
+        else
+        {
+          if (ignoreFromSpreadSheetAttribute?.IgnoreFlag != true)
+          {
+            if (headerAttributeFlag)
+            {
+              var headerAttribute = GetAttributeFrom<HeaderAttribute>(playerTypePropertyInfo);
+              if (headerAttribute != null)
+              {
+                var text = headerAttribute.Text;
+                if (headerAttribute.TextToAddToHeader != null)
+                {
+                  if (playerType.GetProperty(headerAttribute.TextToAddToHeader) != null && playerType.GetProperty(headerAttribute.TextToAddToHeader).GetValue(player, null) != null)
+                  {
+                    text = string.Format(text, playerType.GetProperty(headerAttribute.TextToAddToHeader).GetValue(player, null).ToString());
+                  }
+                }
+
+                var headerCellDfn = new CellDfn(text, index: index);
+                worksheetDfn.ColumnHeadings.Cells.Add(headerCellDfn);
+              }
+            }
+
+            CellDfn cellDfn;
+            if (cellDefinitionAttribute != null)
+            {
+              cellDfn = new CellDfn(
+                playerTypePropertyInfo.GetValue(player),
+                cellDataType: cellDefinitionAttribute.CellDataType,
+                index: index);
+            }
+            else
+            {
+              cellDfn = new CellDfn(
+                playerTypePropertyInfo.GetValue(player),
+                index: index);
+            }
+
+            rowDfn.Cells.Add(cellDfn);
+          }
+        }
+      }
     }
 
     private static void GenerateWorksheetPartContent(WorksheetPart worksheetPart, SheetData sheetData)
@@ -489,7 +537,7 @@
         }
       }
 
-      if (_workbookDfn.Worksheets.Any() == false)
+      if (!_workbookDfn.Worksheets.Any())
       {
         throw new DefinitionException("WorkBook could not be null or empty.");
       }

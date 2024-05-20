@@ -31,6 +31,11 @@
   </ItemGroup>
 
   <ItemGroup>
+    <Compile Update="Models\ChildOfPlayerDummyObjectRes.Designer.cs">
+      <DesignTime>True</DesignTime>
+      <AutoGen>True</AutoGen>
+      <DependentUpon>ChildOfPlayerDummyObjectRes.resx</DependentUpon>
+    </Compile>
     <Compile Update="Models\PlayerDummyObjectRes.Designer.cs">
       <DependentUpon>PlayerDummyObjectRes.resx</DependentUpon>
       <DesignTime>True</DesignTime>
@@ -59,6 +64,10 @@
   </ItemGroup>
 
   <ItemGroup>
+    <EmbeddedResource Update="Models\ChildOfPlayerDummyObjectRes.resx">
+      <Generator>PublicResXFileCodeGenerator</Generator>
+      <LastGenOutput>ChildOfPlayerDummyObjectRes.Designer.cs</LastGenOutput>
+    </EmbeddedResource>
     <EmbeddedResource Update="Models\PlayerDummyObjectRes.resx">
       <LastGenOutput>PlayerDummyObjectRes.Designer.cs</LastGenOutput>
       <Generator>PublicResXFileCodeGenerator</Generator>

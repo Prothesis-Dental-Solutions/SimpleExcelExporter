@@ -1,6 +1,7 @@
 ﻿namespace SimpleExcelExporter.Tests.Preparators
 {
   using System;
+  using System.Collections.Generic;
   using SimpleExcelExporter.Tests.Models;
 
   public static class PlayerDummyObjectPreparator
@@ -18,6 +19,10 @@
       ByteColumn = 1,
       DateTimeOffsetColumn = new DateTimeOffset(new DateTime(1974, 02, 01)),
       FieldGoalPercentage = 0.0111d,
+      ChildsOfPlayer = new List<ChildOfPlayerDummyObject> {
+        ChildOfPlayerDummyObjectPreparator.First(),
+        ChildOfPlayerDummyObjectPreparator.Second(),
+      }
     };
 
     public static PlayerDummyObject Second() => new PlayerDummyObject
@@ -33,6 +38,11 @@
       ByteColumn = 2,
       DateTimeOffsetColumn = new DateTimeOffset(new DateTime(1990, 10, 13)),
       FieldGoalPercentage = 0.0222d,
+      ChildsOfPlayer = new List<ChildOfPlayerDummyObject> {
+        ChildOfPlayerDummyObjectPreparator.Third(),
+        ChildOfPlayerDummyObjectPreparator.Fourth(),
+      }
+
     };
 
     public static PlayerDummyObject Third() => new PlayerDummyObject
@@ -48,6 +58,10 @@
       ByteColumn = 3,
       DateTimeOffsetColumn = new DateTimeOffset(new DateTime(1976, 3, 1)),
       FieldGoalPercentage = 0.0333d,
+      ChildsOfPlayer = new List<ChildOfPlayerDummyObject> {
+        ChildOfPlayerDummyObjectPreparator.First(),
+        ChildOfPlayerDummyObjectPreparator.Fourth(),
+      }
 
     };
 
@@ -64,6 +78,11 @@
       ByteColumn = 4,
       DateTimeOffsetColumn = new DateTimeOffset(new DateTime(1979, 3, 1)),
       FieldGoalPercentage = 0.0444d,
+      ChildsOfPlayer = new List<ChildOfPlayerDummyObject> {
+        ChildOfPlayerDummyObjectPreparator.Second(),
+        ChildOfPlayerDummyObjectPreparator.Third(),
+      }
+
     };
   }
 }

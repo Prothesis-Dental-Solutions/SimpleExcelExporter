@@ -79,6 +79,15 @@ namespace ConsoleApp {
         }
         
         /// <summary>
+        ///   Looks up a localized string similar to Number of game played.
+        /// </summary>
+        public static string GamePlayedColumnName {
+            get {
+                return ResourceManager.GetString("GamePlayedColumnName", resourceCulture);
+            }
+        }
+        
+        /// <summary>
         ///   Looks up a localized string similar to Is active.
         /// </summary>
         public static string IsActiveFlagColumnName {

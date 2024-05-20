@@ -4,15 +4,15 @@
   using SimpleExcelExporter.Annotations;
   using SimpleExcelExporter.Definitions;
 
-  public class PlayerChild
+  public class ChildOfPlayer
   {
     [CellDefinition(CellDataType.String)]
-    [Header(typeof(PlayerChildRes), "ChildFirstName")]
+    [Header(typeof(ChildOfPlayerRes), "ChildFirstName")]
     [Index(1)]
     public string? FirstName { get; set; }
 
     [CellDefinition(CellDataType.Number)]
-    [Header(typeof(PlayerChildRes), "ChildAge")]
+    [Header(typeof(ChildOfPlayerRes), "ChildAge")]
     [Index(2)]
     public int? Age { get; set; }
   }

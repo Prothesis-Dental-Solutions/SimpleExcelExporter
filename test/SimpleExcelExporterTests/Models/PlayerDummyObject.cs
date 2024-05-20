@@ -1,6 +1,7 @@
 ﻿namespace SimpleExcelExporter.Tests.Models
 {
   using System;
+  using System.Collections.Generic;
   using SimpleExcelExporter.Annotations;
   using SimpleExcelExporter.Definitions;
 
@@ -23,7 +24,7 @@
 
     [CellDefinition(CellDataType.Time)]
     [Header(typeof(PlayerDummyObjectRes), "PracticeTimeColumnName")]
-    [Index(8)]
+    [Index(10)]
     public TimeSpan? PracticeTime { get; set; }
 
     [CellDefinition(CellDataType.Number)]
@@ -38,7 +39,7 @@
 
     [CellDefinition(CellDataType.Percentage)]
     [Header(typeof(PlayerDummyObjectRes), "FieldGoalPercentageColumnName")]
-    [Index(8)]
+    [Index(11)]
     public double? FieldGoalPercentage { get; set; }
 
     [CellDefinition(CellDataType.Boolean)]
@@ -48,17 +49,21 @@
 
     [CellDefinition(CellDataType.Number)]
     [Header(typeof(PlayerDummyObjectRes), "SalaryColumnName")]
-    [Index(5)]
+    [Index(6)]
     public decimal? Salary { get; set; }
+
+    [ColumnType(ColumnType.Collection)]
+    [Index(9)]
+    public ICollection<ChildOfPlayerDummyObject>? ChildsOfPlayer { get; set; }
 
     [CellDefinition(CellDataType.Number)]
     [Header(typeof(PlayerDummyObjectRes), "ByteColumnName")]
-    [Index(6)]
+    [Index(7)]
     public byte? ByteColumn { get; set; }
 
     [CellDefinition(CellDataType.String)]
     [Header(typeof(PlayerDummyObjectRes), "DateTimeOffsetColumnName")]
-    [Index(7)]
+    [Index(8)]
     public DateTimeOffset? DateTimeOffsetColumn { get; set; }
   }
 }
