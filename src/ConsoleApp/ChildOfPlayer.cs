@@ -1,6 +1,5 @@
 ﻿namespace ConsoleApp
 {
-  using System;
   using SimpleExcelExporter.Annotations;
   using SimpleExcelExporter.Definitions;
 

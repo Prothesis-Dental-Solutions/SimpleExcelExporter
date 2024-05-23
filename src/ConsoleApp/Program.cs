@@ -46,6 +46,7 @@ namespace ConsoleApp
         PracticeTime = null,
         Size = null,
         DateOfBirth = null,
+        GamePlayed = 0,
         IsActiveFlag = null,
         NumberOfVictory = null,
         FieldGoalPercentage = null,
@@ -75,9 +76,14 @@ namespace ConsoleApp
           ChildsOfPlayer = new List<ChildOfPlayer>
            {
              new () { FirstName = "FirstName1", Age = 1 },
-             new () { FirstName = "FirstName2", Age = 2 },
            },
         };
+
+        if (i % 2 == 0)
+        {
+          player.ChildsOfPlayer.Add(new ChildOfPlayer { FirstName = "FirstName2", Age = 2 });
+        }
+
         team.Players.Add(player);
       }
 

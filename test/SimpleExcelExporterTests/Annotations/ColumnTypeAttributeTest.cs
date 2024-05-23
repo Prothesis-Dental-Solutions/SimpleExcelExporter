@@ -2,7 +2,6 @@
 {
   using NUnit.Framework;
   using SimpleExcelExporter.Annotations;
-  using SimpleExcelExporter.Definitions;
 
   [TestFixture]
   public class ColumnTypeAttributeTest

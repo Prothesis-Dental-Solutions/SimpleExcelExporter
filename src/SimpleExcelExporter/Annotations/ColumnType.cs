@@ -1,4 +1,4 @@
-﻿namespace SimpleExcelExporter.Definitions
+﻿namespace SimpleExcelExporter.Annotations
 {
   public enum ColumnType
   {

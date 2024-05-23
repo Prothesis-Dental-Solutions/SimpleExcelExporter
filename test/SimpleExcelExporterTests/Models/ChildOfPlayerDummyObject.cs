@@ -1,6 +1,5 @@
 ﻿namespace SimpleExcelExporter.Tests.Models
 {
-  using System;
   using SimpleExcelExporter.Annotations;
   using SimpleExcelExporter.Definitions;
 
