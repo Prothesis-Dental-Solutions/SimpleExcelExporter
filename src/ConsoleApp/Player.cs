@@ -52,9 +52,9 @@
     [Index(7)]
     public decimal? Salary { get; set; }
 
-    [ColumnType(ColumnType.Collection)]
+    [MultiColumn]
     [Index(9)]
-    public ICollection<ChildOfPlayer>? ChildsOfPlayer { get; set; }
+    public ICollection<ChildOfPlayer>? PlayerChildren { get; init; }
 
     [CellDefinition(CellDataType.Number)]
     [Header(typeof(PlayerRes), "GamePlayedColumnName")]

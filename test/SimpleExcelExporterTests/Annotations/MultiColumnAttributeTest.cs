@@ -4,17 +4,16 @@
   using SimpleExcelExporter.Annotations;
 
   [TestFixture]
-  public class ColumnTypeAttributeTest
+  public class MultiColumnAttributeTest
   {
     [Test]
     public void Test()
     {
       // Prepare
-      var columnTypeAttribute = new ColumnTypeAttribute(ColumnType.Basic);
+      var columnTypeAttribute = new MultiColumnAttribute();
 
       // Act & Check
       Assert.IsNotNull(columnTypeAttribute);
-      Assert.AreEqual(ColumnType.Basic, columnTypeAttribute.ColumnType);
     }
   }
 }

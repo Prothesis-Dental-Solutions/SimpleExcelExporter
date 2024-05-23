@@ -60,7 +60,7 @@
 
       // Check
       Assert.AreNotEqual(memoryStream.Length, 0);
-      // expected 1 sheet, 5 rows (1 header + 4 players + 2 childs of player), 15 cells 
+      // expected 1 sheet, 5 rows (1 header + 4 players + 2 childs of player), 15 cells
       Validate(memoryStream, 1, 5, 15);
 
       // Prepare an empty object - two properties with the same index column
@@ -85,10 +85,10 @@
 
       // Check
       Assert.AreNotEqual(memoryStream.Length, 0);
-      // expected 1 sheet, 4 rows (1 header + 3 players), 3 cells 
+      // expected 1 sheet, 4 rows (1 header + 3 players), 3 cells
       Validate(memoryStream, 1, 4, 3);
 
-      // Prepare with object - with same sheet 
+      // Prepare with object - with same sheet
       var teamWithSameSheetName = TeamWithSameSheetNameDummyObjectPreparator.First();
       memoryStream.SetLength(0);
 
@@ -144,7 +144,7 @@
       Assert.IsNotNull(workbookPart.Workbook);
       Assert.IsNotNull(workbookPart.Workbook.Sheets);
       Assert.AreEqual(expectedSheetsCount, workbookPart.Workbook.Sheets!.Count());
-      Assert.AreEqual(expectedRowsCount, rows.Count());
+      Assert.AreEqual(expectedRowsCount, rows.Count);
       Assert.AreEqual(expectedCellsCount, cells.Count());
     }
   }

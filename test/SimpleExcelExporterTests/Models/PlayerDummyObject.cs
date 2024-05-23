@@ -52,7 +52,7 @@
     [Index(6)]
     public decimal? Salary { get; set; }
 
-    [ColumnType(ColumnType.Collection)]
+    [MultiColumn]
     [Index(9)]
     public ICollection<ChildOfPlayerDummyObject>? ChildsOfPlayer { get; set; }
 

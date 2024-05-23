@@ -155,7 +155,7 @@
         CellDefinitionAttribute? cellDefinitionAttribute = GetAttributeFrom<CellDefinitionAttribute>(playerTypePropertyInfo);
         IndexAttribute? indexAttribute = GetAttributeFrom<IndexAttribute>(playerTypePropertyInfo);
         IgnoreFromSpreadSheetAttribute? ignoreFromSpreadSheetAttribute = GetAttributeFrom<IgnoreFromSpreadSheetAttribute>(playerTypePropertyInfo);
-        ColumnTypeAttribute? columnTypeAttribute = GetAttributeFrom<ColumnTypeAttribute>(playerTypePropertyInfo);
+        MultiColumnAttribute? columnTypeAttribute = GetAttributeFrom<MultiColumnAttribute>(playerTypePropertyInfo);
 
         // Index management
         decimal index = parentIndex;
@@ -173,7 +173,7 @@
           index += decimal.Divide(indexAttribute.Index, power);
         }
 
-        if (columnTypeAttribute?.ColumnType == ColumnType.Collection)
+        if (columnTypeAttribute != null)
         {
           // Retrieve child object
           if (playerTypePropertyInfo.GetValue(player) is IEnumerable<object> childPlayersEnumerable)
@@ -242,8 +242,8 @@
     {
       foreach (var playerTypePropertyInfo in playerTypePropertyInfos)
       {
-        ColumnTypeAttribute? columnTypeAttribute = GetAttributeFrom<ColumnTypeAttribute>(playerTypePropertyInfo);
-        if (columnTypeAttribute?.ColumnType == ColumnType.Collection)
+        MultiColumnAttribute? columnTypeAttribute = GetAttributeFrom<MultiColumnAttribute>(playerTypePropertyInfo);
+        if (columnTypeAttribute != null)
         {
           if (playerTypePropertyInfo.GetValue(player) is IEnumerable<object> childPlayersEnumerable)
           {
@@ -274,11 +274,11 @@
         CellDfn cellDfn;
         if (cellDefinitionAttribute != null)
         {
-          cellDfn = new CellDfn(playerTypePropertyInfo.GetValue(player), cellDefinitionAttribute.CellDataType, index);
+          cellDfn = new CellDfn(playerTypePropertyInfo.GetValue(player) ?? string.Empty, cellDefinitionAttribute.CellDataType, index);
         }
         else
         {
-          cellDfn = new CellDfn(playerTypePropertyInfo.GetValue(player), index: index);
+          cellDfn = new CellDfn(playerTypePropertyInfo.GetValue(player) ?? string.Empty, index: index);
         }
 
         rowDfn.Cells.Add(cellDfn);

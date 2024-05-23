@@ -1,0 +1,66 @@
+# NOTE: Requires **VS2019 16.3** or later
+
+# Rules for Prothesis
+# Description: Code analysis rules for Prothesis namespaces.
+
+# Code files
+[*.{cs,vb}]
+
+# Default severity for analyzer diagnostics - Requires **VS2019 16.5** or later
+dotnet_analyzer_diagnostic.severity = warning
+dotnet_diagnostic.CA1014.severity = none
+dotnet_diagnostic.CA1020.severity = none
+dotnet_diagnostic.CA1026.severity = none
+dotnet_diagnostic.CA1028.severity = none
+dotnet_diagnostic.CA1054.severity = none
+dotnet_diagnostic.CA1055.severity = none
+dotnet_diagnostic.CA1056.severity = none
+dotnet_diagnostic.CA1062.severity = none
+dotnet_diagnostic.CA1303.severity = none
+dotnet_diagnostic.CA1305.severity = none
+dotnet_diagnostic.CA1307.severity = none
+dotnet_diagnostic.CA1505.severity = none
+dotnet_diagnostic.CA1506.severity = none
+dotnet_diagnostic.CA1707.severity = none
+dotnet_diagnostic.CA1717.severity = none
+dotnet_diagnostic.CA1724.severity = none
+dotnet_diagnostic.CA2007.severity = none
+dotnet_diagnostic.CA2210.severity = none
+dotnet_diagnostic.CA2227.severity = none
+dotnet_diagnostic.IDE0001.severity = none
+dotnet_diagnostic.IDE0003.severity = none
+dotnet_diagnostic.IDE0010.severity = none
+dotnet_diagnostic.IDE0045.severity = none
+dotnet_diagnostic.IDE0046.severity = none
+dotnet_diagnostic.IDE0063.severity = none
+dotnet_diagnostic.IDE0079.severity = none
+dotnet_diagnostic.IDE0090.severity = none
+dotnet_diagnostic.IDE0241.severity = none
+dotnet_diagnostic.IDE0270.severity = none
+dotnet_diagnostic.RCS1090.severity = none
+dotnet_diagnostic.RCS1124.severity = none
+dotnet_diagnostic.RCS1158.severity = none
+dotnet_diagnostic.RCS1165.severity = none
+dotnet_diagnostic.RCS1179.severity = none
+dotnet_diagnostic.SA0001.severity = none
+dotnet_diagnostic.SA1000.severity = none
+dotnet_diagnostic.SA1101.severity = none
+dotnet_diagnostic.SA1309.severity = none
+dotnet_diagnostic.SA1600.severity = none
+dotnet_diagnostic.SA1633.severity = none
+dotnet_diagnostic.SA1634.severity = none
+dotnet_diagnostic.SA1635.severity = none
+dotnet_diagnostic.SA1636.severity = none
+dotnet_diagnostic.SA1637.severity = none
+dotnet_diagnostic.SA1638.severity = none
+dotnet_diagnostic.SA1639.severity = none
+dotnet_diagnostic.SA1640.severity = none
+dotnet_diagnostic.SA1641.severity = none
+dotnet_diagnostic.SX1101.severity = warning
+dotnet_diagnostic.SX1309.severity = warning
+dotnet_diagnostic.SX1309S.severity = warning
+
+# IDE0058: Expression value is never used
+# Almost everytime we don't need the return value of Moq methods (ex: Setup, Verify, etc...)
+# writing something _= MyMoq.Setup... is too verbose.
+dotnet_diagnostic.IDE0058.severity = none

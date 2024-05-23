@@ -51,7 +51,7 @@ namespace ConsoleApp
         NumberOfVictory = null,
         FieldGoalPercentage = null,
         Salary = null,
-        ChildsOfPlayer = new List<ChildOfPlayer>
+        PlayerChildren = new List<ChildOfPlayer>
            {
              new () { FirstName = "FirstName1", Age = 1 },
              new () { FirstName = "FirstName2", Age = 2 },
@@ -73,7 +73,7 @@ namespace ConsoleApp
           FieldGoalPercentage = Convert.ToDouble(rnd.Next(0, 100)) / 100,
           Salary = Convert.ToDecimal(rnd.Next(2000, 1000000) + 0.12654984m),
           GamePlayed = i,
-          ChildsOfPlayer = new List<ChildOfPlayer>
+          PlayerChildren = new List<ChildOfPlayer>
            {
              new () { FirstName = "FirstName1", Age = 1 },
            },
@@ -81,7 +81,7 @@ namespace ConsoleApp
 
         if (i % 2 == 0)
         {
-          player.ChildsOfPlayer.Add(new ChildOfPlayer { FirstName = "FirstName2", Age = 2 });
+          player.PlayerChildren.Add(new ChildOfPlayer { FirstName = "FirstName2", Age = 2 });
         }
 
         team.Players.Add(player);
@@ -181,7 +181,7 @@ namespace ConsoleApp
             NumberOfVictory = 45,
             FieldGoalPercentage = 0.1111,
             Salary = 2000.5m,
-            ChildsOfPlayer = new List<ChildOfPlayer>
+            PlayerChildren = new List<ChildOfPlayer>
              {
                new () { FirstName = "FirstName1", Age = 11 },
                new () { FirstName = "FirstName2", Age = 22 },
@@ -200,7 +200,7 @@ namespace ConsoleApp
             NumberOfVictory = 52,
             FieldGoalPercentage = 0.222,
             Salary = 2141.5452m,
-            ChildsOfPlayer = new List<ChildOfPlayer>
+            PlayerChildren = new List<ChildOfPlayer>
              {
                new () { FirstName = "FirstName1", Age = 11 },
              },

@@ -3,7 +3,7 @@
   using System;
 
   [AttributeUsage(AttributeTargets.Property)]
-  public class IndexAttribute : Attribute
+  public sealed class IndexAttribute : Attribute
   {
     public IndexAttribute(int index)
     {

@@ -3,7 +3,7 @@
   using System;
 
   [AttributeUsage(AttributeTargets.Property)]
-  public class IgnoreFromSpreadSheetAttribute : Attribute
+  public sealed class IgnoreFromSpreadSheetAttribute : Attribute
   {
     public IgnoreFromSpreadSheetAttribute(bool ignoreFlag = true)
     {
