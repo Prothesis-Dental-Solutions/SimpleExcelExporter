@@ -174,7 +174,7 @@
         if (multiColumnAttribute != null)
         {
           // Retrieve child object
-          if (playerTypePropertyInfo.GetValue(player) is IEnumerable<object> childPlayersEnumerable)
+          if (player != null && playerTypePropertyInfo.GetValue(player) is IEnumerable<object> childPlayersEnumerable)
           {
             object[] childPlayers = childPlayersEnumerable.ToArray();
             int maxNumberOfElement = multiColumnAttribute.MaxNumberOfElement;
@@ -269,7 +269,29 @@
         if (multiColumnAttribute != null)
         {
           // Retrieve child object
-          if (playerTypePropertyInfo.GetValue(player) is IEnumerable<object> childPlayersEnumerable)
+          if (player == null)
+          {
+            // Add empty cells if needed
+            int maxNumberOfElement = multiColumnAttribute.MaxNumberOfElement;
+            int childDeep = deep + maxNumberOfElement.ToString().Length;
+            int numberOfEmptyCellToAdd = maxNumberOfElement;
+            int currentIteration = 1;
+            Type? childPlayerType = playerTypePropertyInfo.PropertyType.GenericTypeArguments.FirstOrDefault();
+            if (childPlayerType != null)
+            {
+              PropertyInfo[] childPlayerTypePropertyInfos = childPlayerType.GetProperties(BindingFlags.GetProperty | BindingFlags.Public | BindingFlags.Instance | BindingFlags.Static);
+              for (int i = 0; i < numberOfEmptyCellToAdd; i++)
+              {
+                AddHeaderCellsToRowFromObjectPropertyInfos(worksheetDfn, null, childPlayerType, childPlayerTypePropertyInfos, currentIteration, childDeep + iterationIncrement, index);
+                currentIteration++;
+              }
+            }
+            else
+            {
+              AddHeaderCellToWorkSheet(worksheetDfn, string.Empty, index);
+            }
+          }
+          else if (playerTypePropertyInfo.GetValue(player) is IEnumerable<object> childPlayersEnumerable)
           {
             object[] childPlayers = childPlayersEnumerable.ToArray();
             int maxNumberOfElement = multiColumnAttribute.MaxNumberOfElement;
