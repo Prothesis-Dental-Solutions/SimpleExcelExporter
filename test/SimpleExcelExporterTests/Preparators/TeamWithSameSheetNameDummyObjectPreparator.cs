@@ -4,7 +4,7 @@
 
   public static class TeamWithSameSheetNameDummyObjectPreparator
   {
-    public static TeamWithSameSheetNameDummyObject First() => new TeamWithSameSheetNameDummyObject
+    public static TeamWithSameSheetNameDummyObject First() => new()
     {
 
       FirstPlayerDummyObjects =

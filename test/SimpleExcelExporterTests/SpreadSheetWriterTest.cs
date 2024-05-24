@@ -26,7 +26,7 @@
       // ReSharper disable once ObjectCreationAsStatement
       Assert.Throws<DefinitionException>(() => new SpreadsheetWriter(new MemoryStream(), workBookDfn));
 
-      // Prepare a non empty workbook
+      // Prepare a non-empty workbook
       workBookDfn = WorkbookDfnPreparator.FirstFirstWithCollections();
       using var memoryStream = new MemoryStream();
 
@@ -60,7 +60,7 @@
 
       // Check
       Assert.AreNotEqual(memoryStream.Length, 0);
-      // expected 1 sheet, 5 rows (1 header + 4 players + 2 childs of player), 15 cells
+      // expected 1 sheet, 5 rows (1 header + 4 players + 2 children of player), 15 cells
       Validate(memoryStream, 1, 5, 15);
 
       // Prepare an empty object - two properties with the same index column
@@ -86,7 +86,7 @@
       // Check
       Assert.AreNotEqual(memoryStream.Length, 0);
       // expected 1 sheet, 4 rows (1 header + 3 players), 3 cells
-      Validate(memoryStream, 1, 4, 3);
+      Validate(memoryStream, 1, 4, 4);
 
       // Prepare with object - with same sheet
       var teamWithSameSheetName = TeamWithSameSheetNameDummyObjectPreparator.First();
@@ -116,10 +116,10 @@
       Assert.AreEqual(expected.Message, simpleExcelExporterException.Message);
     }
 
-    private static readonly List<string> ExpectedErrors = new List<string>()
-        {
-            "The attribute 't' has invalid value 'd'. The Enumeration constraint failed.",
-        };
+    private static readonly List<string> ExpectedErrors = new()
+    {
+      "The attribute 't' has invalid value 'd'. The Enumeration constraint failed.",
+    };
 
     private static void Validate(
       Stream memoryStream,

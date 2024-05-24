@@ -3,7 +3,7 @@
   using SimpleExcelExporter.Annotations;
   using SimpleExcelExporter.Definitions;
 
-  public class ChildOfPlayer
+  public class Child
   {
     [CellDefinition(CellDataType.String)]
     [Header(typeof(ChildOfPlayerRes), "ChildFirstName")]

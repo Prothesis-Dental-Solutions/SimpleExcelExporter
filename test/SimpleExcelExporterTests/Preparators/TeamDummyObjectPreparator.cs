@@ -4,9 +4,9 @@
 
   public static class TeamDummyObjectPreparator
   {
-    public static TeamDummyObject First() => new TeamDummyObject();
+    public static TeamDummyObject First() => new();
 
-    public static TeamDummyObject FirstWithCollections() => new TeamDummyObject
+    public static TeamDummyObject FirstWithCollections() => new()
     {
       Players =
         {

@@ -54,7 +54,7 @@
 
     [MultiColumn]
     [Index(9)]
-    public ICollection<ChildOfPlayerDummyObject>? ChildsOfPlayer { get; set; }
+    public ICollection<ChildOfPlayerDummyObject>? Children { get; set; }
 
     [CellDefinition(CellDataType.Number)]
     [Header(typeof(PlayerDummyObjectRes), "ByteColumnName")]

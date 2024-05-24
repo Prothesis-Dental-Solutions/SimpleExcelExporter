@@ -16,7 +16,9 @@
 
   public class SpreadsheetWriter
   {
-    private static readonly IDictionary<string, Attribute?> CachedAttributes = new Dictionary<string, Attribute?>();
+    private readonly IDictionary<string, Attribute?> _cachedAttributes = new Dictionary<string, Attribute?>();
+
+    private readonly ISet<string> _headers = new HashSet<string>();
 
     private readonly Stream _stream;
 
@@ -62,200 +64,10 @@
       CreatePartsForExcel(document);
     }
 
-    private static WorkbookDfn BuildWorkbook(object team)
+    private static void AddHeaderCellToWorkSheet(WorksheetDfn worksheetDfn, string text, decimal index)
     {
-      var workbookDfn = new WorkbookDfn();
-      var teamType = team.GetType();
-      var teamTypePropertyInfos = teamType.GetProperties();
-      var i = 1;
-
-      foreach (var teamTypePropertyInfo in teamTypePropertyInfos)
-      {
-        var emptyExportMessage = MessageRes.EmptyMessageDefault;
-        var emptyExportMessageAttribute = GetAttributeFrom<EmptyResultMessageAttribute>(teamTypePropertyInfo);
-        if (emptyExportMessageAttribute != null && !string.IsNullOrEmpty(emptyExportMessageAttribute.Text))
-        {
-          emptyExportMessage = emptyExportMessageAttribute.Text;
-        }
-
-        var sheetNameAttribute = GetAttributeFrom<SheetNameAttribute>(teamTypePropertyInfo);
-        var sheetName = $"Sheet{i}";
-        if (sheetNameAttribute != null)
-        {
-          sheetName = sheetNameAttribute.Text;
-        }
-
-        var worksheetDfn = new WorksheetDfn(sheetName);
-
-        if (teamTypePropertyInfo.GetValue(team) is IEnumerable<object?> playersEnumerable)
-        {
-          object?[] players = playersEnumerable as object?[] ?? playersEnumerable.ToArray();
-
-          // Add data (header lines + data lines)
-          bool headerAttributeFlag = true;
-          if (!players.Any())
-          {
-            // Create fake cell with warning message
-            RowDfn rowDfn = new RowDfn();
-            worksheetDfn.Rows.Add(rowDfn);
-            CellDfn cellDfn = new CellDfn(emptyExportMessage, 0);
-            rowDfn.Cells.Add(cellDfn);
-            workbookDfn.Worksheets.Add(worksheetDfn);
-          }
-          else
-          {
-            foreach (object? player in players)
-            {
-              if (player != null)
-              {
-                var playerType = player.GetType();
-                PropertyInfo[] playerTypePropertyInfos = playerType.GetProperties();
-                RowDfn rowDfn = new RowDfn();
-                worksheetDfn.Rows.Add(rowDfn);
-
-                CalculateMaxNumberOfElement(player, playerTypePropertyInfos);
-                AddCellsToRowFromObjectPropertyInfos(worksheetDfn, headerAttributeFlag, player, playerType, playerTypePropertyInfos, rowDfn, 0, 0, 0);
-
-                headerAttributeFlag = false;
-              }
-            }
-          }
-        }
-
-        workbookDfn.Worksheets.Add(worksheetDfn);
-        i++;
-      }
-
-      foreach (WorksheetDfn worksheet in workbookDfn.Worksheets)
-      {
-        worksheet.ColumnHeadings.OrderCells();
-
-        foreach (RowDfn rowDfn in worksheet.Rows)
-        {
-          rowDfn.OrderCells();
-        }
-      }
-
-      return workbookDfn;
-    }
-
-    private static void AddCellsToRowFromObjectPropertyInfos(
-      WorksheetDfn worksheetDfn,
-      bool headerAttributeFlag,
-      object? player,
-      Type playerType,
-      PropertyInfo[] playerTypePropertyInfos,
-      RowDfn rowDfn,
-      int iteration,
-      int deep,
-      decimal parentIndex)
-    {
-      foreach (var playerTypePropertyInfo in playerTypePropertyInfos)
-      {
-        CellDefinitionAttribute? cellDefinitionAttribute = GetAttributeFrom<CellDefinitionAttribute>(playerTypePropertyInfo);
-        IndexAttribute? indexAttribute = GetAttributeFrom<IndexAttribute>(playerTypePropertyInfo);
-        IgnoreFromSpreadSheetAttribute? ignoreFromSpreadSheetAttribute = GetAttributeFrom<IgnoreFromSpreadSheetAttribute>(playerTypePropertyInfo);
-        MultiColumnAttribute? columnTypeAttribute = GetAttributeFrom<MultiColumnAttribute>(playerTypePropertyInfo);
-
-        // Index management
-        decimal index = parentIndex;
-        int power = (int)Math.Pow(10, deep);
-        int iterationIncrement = 0;
-        if (iteration > 0)
-        {
-          index += decimal.Divide(iteration, power);
-          iterationIncrement = 1;
-        }
-
-        if (indexAttribute != null)
-        {
-          power = (int)Math.Pow(10, deep + iterationIncrement);
-          index += decimal.Divide(indexAttribute.Index, power);
-        }
-
-        if (columnTypeAttribute != null)
-        {
-          // Retrieve child object
-          if (playerTypePropertyInfo.GetValue(player) is IEnumerable<object> childPlayersEnumerable)
-          {
-            object[] childPlayers = childPlayersEnumerable.ToArray();
-            int maxNumberOfElement = columnTypeAttribute.MaxNumberOfElement;
-            int childDeep = deep + maxNumberOfElement.ToString().Length;
-            int currentIteration = 1;
-            Type? childPlayerType = null;
-            PropertyInfo[]? childPlayerTypePropertyInfos = null;
-            foreach (object? childPlayer in childPlayers)
-            {
-              childPlayerType = childPlayer.GetType();
-              childPlayerTypePropertyInfos = childPlayerType.GetProperties();
-              AddCellsToRowFromObjectPropertyInfos(worksheetDfn, headerAttributeFlag, childPlayer, childPlayerType, childPlayerTypePropertyInfos, rowDfn, currentIteration, childDeep + iterationIncrement, index);
-              currentIteration++;
-            }
-
-            // Add empty cells if needed
-            int numberOfEmptyCellToAdd = maxNumberOfElement - childPlayers.Length;
-            if (childPlayerType != null && childPlayerTypePropertyInfos != null && numberOfEmptyCellToAdd > 0)
-            {
-              for (int i = 0; i < numberOfEmptyCellToAdd; i++)
-              {
-                AddCellsToRowFromObjectPropertyInfos(worksheetDfn, headerAttributeFlag, null, childPlayerType, childPlayerTypePropertyInfos, rowDfn, currentIteration, childDeep + iterationIncrement, index);
-                currentIteration++;
-              }
-            }
-          }
-          else
-          {
-            CreateEmptyCellToRow(rowDfn, cellDefinitionAttribute, index);
-          }
-        }
-        else
-        {
-          if (ignoreFromSpreadSheetAttribute?.IgnoreFlag != true)
-          {
-            if (headerAttributeFlag)
-            {
-              HeaderAttribute? headerAttribute = GetAttributeFrom<HeaderAttribute>(playerTypePropertyInfo);
-              if (headerAttribute != null)
-              {
-                string text = headerAttribute.Text;
-                if (headerAttribute.TextToAddToHeader != null)
-                {
-                  PropertyInfo? textToAddToHeaderPropertyInfo = playerType.GetProperty(headerAttribute.TextToAddToHeader);
-                  if (textToAddToHeaderPropertyInfo != null && textToAddToHeaderPropertyInfo.GetValue(player, null) != null)
-                  {
-                    text = string.Format(text, textToAddToHeaderPropertyInfo.GetValue(player, null));
-                  }
-                }
-
-                CellDfn headerCellDfn = new CellDfn(text, index: index);
-                worksheetDfn.ColumnHeadings.Cells.Add(headerCellDfn);
-              }
-            }
-
-            CreateCellToRow(player, rowDfn, cellDefinitionAttribute, playerTypePropertyInfo, index);
-          }
-        }
-      }
-    }
-
-    private static void CalculateMaxNumberOfElement(object? player, PropertyInfo[] playerTypePropertyInfos)
-    {
-      foreach (var playerTypePropertyInfo in playerTypePropertyInfos)
-      {
-        MultiColumnAttribute? columnTypeAttribute = GetAttributeFrom<MultiColumnAttribute>(playerTypePropertyInfo);
-        if (columnTypeAttribute != null)
-        {
-          if (playerTypePropertyInfo.GetValue(player) is IEnumerable<object> childPlayersEnumerable)
-          {
-            object[] childPlayers = childPlayersEnumerable.ToArray();
-            int numberOfElement = childPlayers.Length;
-            if (numberOfElement > columnTypeAttribute.MaxNumberOfElement)
-            {
-              columnTypeAttribute.MaxNumberOfElement = numberOfElement;
-            }
-          }
-        }
-      }
+      CellDfn headerCellDfn = new CellDfn(text, index: index);
+      worksheetDfn.ColumnHeadings.Cells.Add(headerCellDfn);
     }
 
     private static void CreateCellToRow(
@@ -327,21 +139,313 @@
       worksheetPart.Worksheet = worksheet;
     }
 
-    private static T? GetAttributeFrom<T>(PropertyInfo property)
-      where T : Attribute
+    private void AddCellsToRowFromObjectPropertyInfos(
+      object? player,
+      PropertyInfo[] playerTypePropertyInfos,
+      RowDfn rowDfn,
+      int iteration,
+      int deep,
+      decimal parentIndex)
     {
-      string key = $"{property.Module.MetadataToken}_{property.MetadataToken}_{typeof(T).Name}";
-      if (CachedAttributes.TryGetValue(key, out var cachedAttribute))
+      foreach (var playerTypePropertyInfo in playerTypePropertyInfos)
       {
-        return (T?)cachedAttribute;
+        CellDefinitionAttribute? cellDefinitionAttribute = GetAttributeFrom<CellDefinitionAttribute>(playerTypePropertyInfo);
+        IndexAttribute? indexAttribute = GetAttributeFrom<IndexAttribute>(playerTypePropertyInfo);
+        IgnoreFromSpreadSheetAttribute? ignoreFromSpreadSheetAttribute = GetAttributeFrom<IgnoreFromSpreadSheetAttribute>(playerTypePropertyInfo);
+        MultiColumnAttribute? multiColumnAttribute = GetAttributeFrom<MultiColumnAttribute>(playerTypePropertyInfo);
+
+        // TODO - Yanal - relire ce code
+        // Index management
+        decimal index = parentIndex;
+        int power = (int)Math.Pow(10, deep);
+        int iterationIncrement = 0;
+        if (iteration > 0)
+        {
+          index += decimal.Divide(iteration, power);
+          iterationIncrement = 1;
+        }
+
+        if (indexAttribute != null)
+        {
+          power = (int)Math.Pow(10, deep + iterationIncrement);
+          index += decimal.Divide(indexAttribute.Index, power);
+        }
+
+        if (multiColumnAttribute != null)
+        {
+          // Retrieve child object
+          if (playerTypePropertyInfo.GetValue(player) is IEnumerable<object> childPlayersEnumerable)
+          {
+            object[] childPlayers = childPlayersEnumerable.ToArray();
+            int maxNumberOfElement = multiColumnAttribute.MaxNumberOfElement;
+            int childDeep = deep + maxNumberOfElement.ToString().Length;
+            int currentIteration = 1;
+            Type? childPlayerType = null;
+            PropertyInfo[]? childPlayerTypePropertyInfos = null;
+            foreach (object? childPlayer in childPlayers)
+            {
+              childPlayerType = childPlayer.GetType();
+              childPlayerTypePropertyInfos = childPlayerType.GetProperties();
+              AddCellsToRowFromObjectPropertyInfos(childPlayer, childPlayerTypePropertyInfos, rowDfn, currentIteration, childDeep + iterationIncrement, index);
+              currentIteration++;
+            }
+
+            // Add empty cells if needed
+            int numberOfEmptyCellToAdd = maxNumberOfElement - childPlayers.Length;
+            if (childPlayerType != null && childPlayerTypePropertyInfos != null && numberOfEmptyCellToAdd > 0)
+            {
+              for (int i = 0; i < numberOfEmptyCellToAdd; i++)
+              {
+                AddCellsToRowFromObjectPropertyInfos(null, childPlayerTypePropertyInfos, rowDfn, currentIteration, childDeep + iterationIncrement, index);
+                currentIteration++;
+              }
+            }
+          }
+          else
+          {
+            // Add empty cells if needed
+            int maxNumberOfElement = multiColumnAttribute.MaxNumberOfElement;
+            int childDeep = deep + maxNumberOfElement.ToString().Length;
+            int numberOfEmptyCellToAdd = maxNumberOfElement;
+            int currentIteration = 1;
+            Type? childPlayerType = playerTypePropertyInfo.PropertyType.GenericTypeArguments.FirstOrDefault();
+            if (childPlayerType != null)
+            {
+              PropertyInfo[] childPlayerTypePropertyInfos = childPlayerType.GetProperties(BindingFlags.GetProperty | BindingFlags.Public | BindingFlags.Instance | BindingFlags.Static);
+              for (int i = 0; i < numberOfEmptyCellToAdd; i++)
+              {
+                AddCellsToRowFromObjectPropertyInfos(null, childPlayerTypePropertyInfos, rowDfn, currentIteration, childDeep + iterationIncrement, index);
+                currentIteration++;
+              }
+            }
+            else
+            {
+              CreateEmptyCellToRow(rowDfn, cellDefinitionAttribute, index);
+            }
+          }
+        }
+        else
+        {
+          if (ignoreFromSpreadSheetAttribute?.IgnoreFlag != true)
+          {
+            CreateCellToRow(player, rowDfn, cellDefinitionAttribute, playerTypePropertyInfo, index);
+          }
+        }
+      }
+    }
+
+    private void AddHeaderCellsToRowFromObjectPropertyInfos(
+      WorksheetDfn worksheetDfn,
+      object? player,
+      Type playerType,
+      PropertyInfo[] playerTypePropertyInfos,
+      int iteration,
+      int deep,
+      decimal parentIndex)
+    {
+      foreach (var playerTypePropertyInfo in playerTypePropertyInfos)
+      {
+        IndexAttribute? indexAttribute = GetAttributeFrom<IndexAttribute>(playerTypePropertyInfo);
+        IgnoreFromSpreadSheetAttribute? ignoreFromSpreadSheetAttribute = GetAttributeFrom<IgnoreFromSpreadSheetAttribute>(playerTypePropertyInfo);
+        MultiColumnAttribute? multiColumnAttribute = GetAttributeFrom<MultiColumnAttribute>(playerTypePropertyInfo);
+
+        // TODO - Yanal - relire ce code
+        // Index management
+        decimal index = parentIndex;
+        int power = (int)Math.Pow(10, deep);
+        int iterationIncrement = 0;
+        if (iteration > 0)
+        {
+          index += decimal.Divide(iteration, power);
+          iterationIncrement = 1;
+        }
+
+        if (indexAttribute != null)
+        {
+          power = (int)Math.Pow(10, deep + iterationIncrement);
+          index += decimal.Divide(indexAttribute.Index, power);
+        }
+
+        if (multiColumnAttribute != null)
+        {
+          // Retrieve child object
+          if (playerTypePropertyInfo.GetValue(player) is IEnumerable<object> childPlayersEnumerable)
+          {
+            object[] childPlayers = childPlayersEnumerable.ToArray();
+            int maxNumberOfElement = multiColumnAttribute.MaxNumberOfElement;
+            int childDeep = deep + maxNumberOfElement.ToString().Length;
+            int currentIteration = 1;
+            Type? childPlayerType = null;
+            PropertyInfo[]? childPlayerTypePropertyInfos = null;
+            foreach (object? childPlayer in childPlayers)
+            {
+              childPlayerType = childPlayer.GetType();
+              childPlayerTypePropertyInfos = childPlayerType.GetProperties();
+              AddHeaderCellsToRowFromObjectPropertyInfos(worksheetDfn, childPlayer, childPlayerType, childPlayerTypePropertyInfos, currentIteration, childDeep + iterationIncrement, index);
+              currentIteration++;
+            }
+
+            // Add empty cells if needed
+            int numberOfEmptyCellToAdd = maxNumberOfElement - childPlayers.Length;
+            if (childPlayerType != null && childPlayerTypePropertyInfos != null && numberOfEmptyCellToAdd > 0)
+            {
+              for (int i = 0; i < numberOfEmptyCellToAdd; i++)
+              {
+                AddHeaderCellsToRowFromObjectPropertyInfos(worksheetDfn, null, childPlayerType, childPlayerTypePropertyInfos, currentIteration, childDeep + iterationIncrement, index);
+                currentIteration++;
+              }
+            }
+          }
+          else if (playerTypePropertyInfo.GetValue(player) != null)
+          {
+            AddHeaderCellToWorkSheet(worksheetDfn, string.Empty, index);
+          }
+        }
+        else
+        {
+          if (ignoreFromSpreadSheetAttribute?.IgnoreFlag != true)
+          {
+            string key = $"{playerTypePropertyInfo.Module.MetadataToken}_{playerTypePropertyInfo.MetadataToken}_{index}";
+            if (_headers.Add(key))
+            {
+              HeaderAttribute? headerAttribute = GetAttributeFrom<HeaderAttribute>(playerTypePropertyInfo);
+              if (headerAttribute != null)
+              {
+                // TODO - et si le header n'est pas défini ?
+                string text = headerAttribute.Text;
+                if (headerAttribute.TextToAddToHeader != null)
+                {
+                  PropertyInfo? textToAddToHeaderPropertyInfo = playerType.GetProperty(headerAttribute.TextToAddToHeader);
+                  if (textToAddToHeaderPropertyInfo != null && textToAddToHeaderPropertyInfo.GetValue(player, null) != null)
+                  {
+                    text = string.Format(text, textToAddToHeaderPropertyInfo.GetValue(player, null));
+                  }
+                }
+
+                AddHeaderCellToWorkSheet(worksheetDfn, text, index);
+              }
+              else
+              {
+                AddHeaderCellToWorkSheet(worksheetDfn, string.Empty, index);
+              }
+            }
+          }
+        }
+      }
+    }
+
+    private WorkbookDfn BuildWorkbook(object team)
+    {
+      var workbookDfn = new WorkbookDfn();
+      var teamType = team.GetType();
+      var teamTypePropertyInfos = teamType.GetProperties();
+      var i = 1;
+
+      foreach (var teamTypePropertyInfo in teamTypePropertyInfos)
+      {
+        var emptyExportMessage = MessageRes.EmptyMessageDefault;
+        var emptyExportMessageAttribute = GetAttributeFrom<EmptyResultMessageAttribute>(teamTypePropertyInfo);
+        if (emptyExportMessageAttribute != null && !string.IsNullOrEmpty(emptyExportMessageAttribute.Text))
+        {
+          emptyExportMessage = emptyExportMessageAttribute.Text;
+        }
+
+        var sheetNameAttribute = GetAttributeFrom<SheetNameAttribute>(teamTypePropertyInfo);
+        var sheetName = $"Sheet{i}";
+        if (sheetNameAttribute != null)
+        {
+          sheetName = sheetNameAttribute.Text;
+        }
+
+        var worksheetDfn = new WorksheetDfn(sheetName);
+
+        if (teamTypePropertyInfo.GetValue(team) is IEnumerable<object?> playersEnumerable)
+        {
+          object?[] players = playersEnumerable as object?[] ?? playersEnumerable.ToArray();
+
+          // Add data (header lines + data lines)
+          if (!players.Any())
+          {
+            // Create fake cell with warning message
+            RowDfn rowDfn = new RowDfn();
+            worksheetDfn.Rows.Add(rowDfn);
+            CellDfn cellDfn = new CellDfn(emptyExportMessage, 0);
+            rowDfn.Cells.Add(cellDfn);
+            workbookDfn.Worksheets.Add(worksheetDfn);
+          }
+          else
+          {
+            foreach (object? player in players)
+            {
+              if (player != null)
+              {
+                var playerType = player.GetType();
+                PropertyInfo[] playerTypePropertyInfos = playerType.GetProperties();
+                CalculateMaxNumberOfElement(player, playerTypePropertyInfos);
+              }
+            }
+
+            // Headers
+            foreach (object? player in players)
+            {
+              if (player != null)
+              {
+                var playerType = player.GetType();
+                PropertyInfo[] playerTypePropertyInfos = playerType.GetProperties();
+                AddHeaderCellsToRowFromObjectPropertyInfos(worksheetDfn, player, playerType, playerTypePropertyInfos, 0, 0, 0);
+              }
+            }
+
+            // Rows
+            foreach (object? player in players)
+            {
+              if (player != null)
+              {
+                var playerType = player.GetType();
+                PropertyInfo[] playerTypePropertyInfos = playerType.GetProperties();
+                RowDfn rowDfn = new RowDfn();
+                worksheetDfn.Rows.Add(rowDfn);
+                AddCellsToRowFromObjectPropertyInfos(player, playerTypePropertyInfos, rowDfn, 0, 0, 0);
+              }
+            }
+          }
+        }
+
+        workbookDfn.Worksheets.Add(worksheetDfn);
+        i++;
       }
 
-      var attrType = typeof(T);
+      foreach (WorksheetDfn worksheet in workbookDfn.Worksheets)
+      {
+        worksheet.ColumnHeadings.OrderCells();
 
-      // property is expected to be not null because instance and property
-      var attribute = (T?)property.GetCustomAttributes(attrType, false).FirstOrDefault();
-      CachedAttributes.Add(key, attribute);
-      return attribute;
+        foreach (RowDfn rowDfn in worksheet.Rows)
+        {
+          rowDfn.OrderCells();
+        }
+      }
+
+      return workbookDfn;
+    }
+
+    private void CalculateMaxNumberOfElement(object? player, PropertyInfo[] playerTypePropertyInfos)
+    {
+      foreach (var playerTypePropertyInfo in playerTypePropertyInfos)
+      {
+        MultiColumnAttribute? multiColumnAttribute = GetAttributeFrom<MultiColumnAttribute>(playerTypePropertyInfo);
+        if (multiColumnAttribute != null)
+        {
+          if (playerTypePropertyInfo.GetValue(player) is IEnumerable<object> childPlayersEnumerable)
+          {
+            object[] childPlayers = childPlayersEnumerable.ToArray();
+            int numberOfElement = childPlayers.Length;
+            if (numberOfElement > multiColumnAttribute.MaxNumberOfElement)
+            {
+              multiColumnAttribute.MaxNumberOfElement = numberOfElement;
+            }
+          }
+        }
+      }
     }
 
     private Cell CreateCell(CellDfn cellDfn)
@@ -428,6 +532,79 @@
       return row;
     }
 
+    private uint CreateOrGetStylIndex(CellDfn cellDfn)
+    {
+      int styleHashCode = cellDfn.GetStyleHashCode();
+      if (Table.TryGetValue(styleHashCode, out var stylIndex))
+      {
+        return stylIndex;
+      }
+
+      var cellFormat = new CellFormat
+      {
+        ApplyBorder = true,
+        ApplyFont = true,
+        ApplyNumberFormat = BooleanValue.FromBoolean(true),
+        BorderId = 0U,
+        FillId = 0U,
+        FormatId = 0U,
+        FontId = 0U,
+      };
+
+      // https://stackoverflow.com/questions/11781210/c-sharp-open-xml-2-0-numberformatid-range
+      if (cellDfn.CellDataType == CellDataType.Date)
+      {
+        cellFormat.NumberFormatId = 14U; // d/m/yyyy
+      }
+      else if (cellDfn.CellDataType == CellDataType.String)
+      {
+        cellFormat.NumberFormatId = 49U; // @
+      }
+      else if (cellDfn.CellDataType == CellDataType.Percentage)
+      {
+        cellFormat.NumberFormatId = 10U;
+      }
+      else if (cellDfn.CellDataType == CellDataType.Time)
+      {
+        cellFormat.NumberFormatId = 20U; // H:mm
+      }
+      else
+      {
+        cellFormat.NumberFormatId = 0U;
+      }
+
+      var index = _stylesheet.CellFormats!.Count!.Value;
+      _stylesheet.CellFormats!.Count!.Value++;
+      _stylesheet.CellFormats.AppendChild(cellFormat);
+      Table.Add(styleHashCode, index);
+
+      return index;
+    }
+
+    private void CreatePartsForExcel(SpreadsheetDocument document)
+    {
+      var workbookPart = document.AddWorkbookPart();
+      var workbook = new Workbook();
+      workbookPart.Workbook = workbook;
+      var sheets = new Sheets();
+      workbook.AppendChild(sheets);
+
+      var workbookStylesPart1 = workbookPart.AddNewPart<WorkbookStylesPart>("rId3");
+      GenerateWorkbookStylesPartContent(workbookStylesPart1);
+
+      // Thank you https://stackoverflow.com/questions/9120544/openxml-multiple-sheets
+      uint count = 1U;
+      foreach (var worksheet in _workbookDfn.Worksheets)
+      {
+        var worksheetPart = workbookPart.AddNewPart<WorksheetPart>();
+        var sheet = new Sheet { Name = worksheet.Name, SheetId = count, Id = workbookPart.GetIdOfPart(worksheetPart) };
+        sheets.AppendChild(sheet);
+        var sheetData = GenerateSheetDataForDetails(worksheet);
+        GenerateWorksheetPartContent(worksheetPart, sheetData);
+        count++;
+      }
+    }
+
     private Row GenerateRowForChildPartDetail(RowDfn rowDfn)
     {
       var row = new Row();
@@ -506,77 +683,21 @@
       workbookStylesPart.Stylesheet = _stylesheet;
     }
 
-    private uint CreateOrGetStylIndex(CellDfn cellDfn)
+    private T? GetAttributeFrom<T>(PropertyInfo propertyInfo)
+      where T : Attribute
     {
-      int styleHashCode = cellDfn.GetStyleHashCode();
-      if (Table.TryGetValue(styleHashCode, out var stylIndex))
+      string key = $"{propertyInfo.Module.MetadataToken}_{propertyInfo.MetadataToken}_{typeof(T).Name}"; // TODO Yanal - voir si on peut retirer _{typeof(T).Name}
+      if (_cachedAttributes.TryGetValue(key, out var cachedAttribute))
       {
-        return stylIndex;
+        return (T?)cachedAttribute;
       }
 
-      var cellFormat = new CellFormat
-      {
-        ApplyBorder = true,
-        ApplyFont = true,
-        ApplyNumberFormat = BooleanValue.FromBoolean(true),
-        BorderId = 0U,
-        FillId = 0U,
-        FormatId = 0U,
-        FontId = 0U,
-      };
+      var attrType = typeof(T);
 
-      // https://stackoverflow.com/questions/11781210/c-sharp-open-xml-2-0-numberformatid-range
-      if (cellDfn.CellDataType == CellDataType.Date)
-      {
-        cellFormat.NumberFormatId = 14U; // d/m/yyyy
-      }
-      else if (cellDfn.CellDataType == CellDataType.String)
-      {
-        cellFormat.NumberFormatId = 49U; // @
-      }
-      else if (cellDfn.CellDataType == CellDataType.Percentage)
-      {
-        cellFormat.NumberFormatId = 10U;
-      }
-      else if (cellDfn.CellDataType == CellDataType.Time)
-      {
-        cellFormat.NumberFormatId = 20U; // H:mm
-      }
-      else
-      {
-        cellFormat.NumberFormatId = 0U;
-      }
-
-      var index = _stylesheet.CellFormats!.Count!.Value;
-      _stylesheet.CellFormats!.Count!.Value++;
-      _stylesheet.CellFormats.AppendChild(cellFormat);
-      Table.Add(styleHashCode, index);
-
-      return index;
-    }
-
-    private void CreatePartsForExcel(SpreadsheetDocument document)
-    {
-      var workbookPart = document.AddWorkbookPart();
-      var workbook = new Workbook();
-      workbookPart.Workbook = workbook;
-      var sheets = new Sheets();
-      workbook.AppendChild(sheets);
-
-      var workbookStylesPart1 = workbookPart.AddNewPart<WorkbookStylesPart>("rId3");
-      GenerateWorkbookStylesPartContent(workbookStylesPart1);
-
-      // Thank you https://stackoverflow.com/questions/9120544/openxml-multiple-sheets
-      uint count = 1U;
-      foreach (var worksheet in _workbookDfn.Worksheets)
-      {
-        var worksheetPart = workbookPart.AddNewPart<WorksheetPart>();
-        var sheet = new Sheet { Name = worksheet.Name, SheetId = count, Id = workbookPart.GetIdOfPart(worksheetPart) };
-        sheets.AppendChild(sheet);
-        var sheetData = GenerateSheetDataForDetails(worksheet);
-        GenerateWorksheetPartContent(worksheetPart, sheetData);
-        count++;
-      }
+      // property is expected to be not null because instance and property
+      var attribute = (T?)propertyInfo.GetCustomAttributes(attrType, false).FirstOrDefault();
+      _cachedAttributes.Add(key, attribute);
+      return attribute;
     }
 
     private void OrderWorkBookDfn()

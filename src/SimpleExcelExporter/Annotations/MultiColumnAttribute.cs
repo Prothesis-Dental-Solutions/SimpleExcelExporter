@@ -5,11 +5,14 @@
   [AttributeUsage(AttributeTargets.Property)]
   public sealed class MultiColumnAttribute : Attribute
   {
-    public MultiColumnAttribute(int maxNumberOfElement = 0)
+    public MultiColumnAttribute(int minimalNumberOfElement = 0)
     {
-      MaxNumberOfElement = maxNumberOfElement;
+      MaxNumberOfElement = minimalNumberOfElement;
+      MinimalNumberOfElement = minimalNumberOfElement;
     }
 
     public int MaxNumberOfElement { get; set; }
+
+    public int MinimalNumberOfElement { get; }
   }
 }

@@ -6,7 +6,7 @@
 
   public static class PlayerDummyObjectPreparator
   {
-    public static PlayerDummyObject First() => new PlayerDummyObject
+    public static PlayerDummyObject First() => new()
     {
       PlayerCode = null,
       PlayerName = "Player\bName1<a href=\"https://www.google.com\" /> &lt;b /&gt; \r\n\t",
@@ -19,13 +19,13 @@
       ByteColumn = 1,
       DateTimeOffsetColumn = new DateTimeOffset(new DateTime(1974, 02, 01)),
       FieldGoalPercentage = 0.0111d,
-      ChildsOfPlayer = new List<ChildOfPlayerDummyObject> {
+      Children = new List<ChildOfPlayerDummyObject> {
         ChildOfPlayerDummyObjectPreparator.First(),
         ChildOfPlayerDummyObjectPreparator.Second(),
       }
     };
 
-    public static PlayerDummyObject Second() => new PlayerDummyObject
+    public static PlayerDummyObject Second() => new()
     {
       PlayerCode = "02",
       PlayerName = "PlayerName2",
@@ -38,14 +38,14 @@
       ByteColumn = 2,
       DateTimeOffsetColumn = new DateTimeOffset(new DateTime(1990, 10, 13)),
       FieldGoalPercentage = 0.0222d,
-      ChildsOfPlayer = new List<ChildOfPlayerDummyObject> {
+      Children = new List<ChildOfPlayerDummyObject> {
         ChildOfPlayerDummyObjectPreparator.Third(),
         ChildOfPlayerDummyObjectPreparator.Fourth(),
       }
 
     };
 
-    public static PlayerDummyObject Third() => new PlayerDummyObject
+    public static PlayerDummyObject Third() => new()
     {
       PlayerCode = "03",
       PlayerName = "PlayerName3",
@@ -58,14 +58,14 @@
       ByteColumn = 3,
       DateTimeOffsetColumn = new DateTimeOffset(new DateTime(1976, 3, 1)),
       FieldGoalPercentage = 0.0333d,
-      ChildsOfPlayer = new List<ChildOfPlayerDummyObject> {
+      Children = new List<ChildOfPlayerDummyObject> {
         ChildOfPlayerDummyObjectPreparator.First(),
         ChildOfPlayerDummyObjectPreparator.Fourth(),
       }
 
     };
 
-    public static PlayerDummyObject Fourth() => new PlayerDummyObject
+    public static PlayerDummyObject Fourth() => new()
     {
       PlayerCode = "04",
       PlayerName = "PlayerName4",
@@ -78,7 +78,7 @@
       ByteColumn = 4,
       DateTimeOffsetColumn = new DateTimeOffset(new DateTime(1979, 3, 1)),
       FieldGoalPercentage = 0.0444d,
-      ChildsOfPlayer = new List<ChildOfPlayerDummyObject> {
+      Children = new List<ChildOfPlayerDummyObject> {
         ChildOfPlayerDummyObjectPreparator.Second(),
         ChildOfPlayerDummyObjectPreparator.Third(),
       }

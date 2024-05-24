@@ -7,7 +7,7 @@
   public class IgnoreFromSpreadSheetAttributeTest
   {
     [Test]
-    public void Test()
+    public void ConstructorTest()
     {
       // Prepare
       var ignoreFromSpreadSheetAttribute = new IgnoreFromSpreadSheetAttribute(true);

@@ -11,7 +11,7 @@
 
     public string Name { get; }
 
-    public RowDfn ColumnHeadings { get; } = new RowDfn();
+    public RowDfn ColumnHeadings { get; } = new();
 
     public ICollection<RowDfn> Rows { get; } = new HashSet<RowDfn>();
   }

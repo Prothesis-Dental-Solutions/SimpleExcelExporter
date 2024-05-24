@@ -8,7 +8,7 @@ namespace SimpleExcelExporter.Tests.Annotations
   public class IndexAttributeTest
   {
     [Test]
-    public void Test()
+    public void ConstructorTest()
     {
       //Prepare && Act & Check
       // ReSharper disable once ObjectCreationAsStatement

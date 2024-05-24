@@ -7,13 +7,28 @@
   public class MultiColumnAttributeTest
   {
     [Test]
-    public void Test()
+    public void ConstructorTest()
     {
       // Prepare
-      var columnTypeAttribute = new MultiColumnAttribute();
+      var multiColumnAttribute = new MultiColumnAttribute();
 
       // Act & Check
-      Assert.IsNotNull(columnTypeAttribute);
+      Assert.IsNotNull(multiColumnAttribute);
+      Assert.AreEqual(multiColumnAttribute.MinimalNumberOfElement, 0);
+      Assert.AreEqual(multiColumnAttribute.MaxNumberOfElement, 0);
+    }
+
+
+    [Test]
+    public void ConstructorTest_MinimalNumberOfElement()
+    {
+      // Prepare
+      var multiColumnAttribute = new MultiColumnAttribute(6);
+
+      // Act & Check
+      Assert.IsNotNull(multiColumnAttribute);
+      Assert.AreEqual(multiColumnAttribute.MinimalNumberOfElement, 6);
+      Assert.AreEqual(multiColumnAttribute.MaxNumberOfElement, 6);
     }
   }
 }

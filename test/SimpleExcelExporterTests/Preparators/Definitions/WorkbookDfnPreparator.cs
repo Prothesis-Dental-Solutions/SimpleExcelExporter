@@ -8,7 +8,7 @@
   /// </summary>
   public static class WorkbookDfnPreparator
   {
-    public static WorkbookDfn First() => new WorkbookDfn();
+    public static WorkbookDfn First() => new();
 
     public static WorkbookDfn FirstFirstWithCollections()
     {
