@@ -5,10 +5,12 @@ namespace ConsoleApp
   using System;
   using System.Collections.Generic;
   using System.Diagnostics;
+  using System.Diagnostics.CodeAnalysis;
   using System.IO;
   using SimpleExcelExporter;
   using SimpleExcelExporter.Definitions;
 
+  [SuppressMessage("Security", "CA5394:Do not use insecure randomness", Justification = "Weak pseudo-random numbers aren't used in a security-sensitive manner")]
   public static class Program
   {
     public static void Main()
@@ -32,7 +34,7 @@ namespace ConsoleApp
       using var streamWriter = new StreamWriter(memoryStream);
       var team = new Team();
       Random rnd = new Random();
-      RandomDateTime randomDate = new RandomDateTime();
+      WeakPseudoRandomDateTime weakPseudoRandomDate = new WeakPseudoRandomDateTime();
       Console.WriteLine("Generating the players...");
       Stopwatch stopwatch = new Stopwatch();
       stopwatch.Start();
@@ -68,7 +70,7 @@ namespace ConsoleApp
           PlayerName = $"Player{i}",
           PracticeTime = new TimeSpan(rnd.Next(0, 23), rnd.Next(0, 59), 0),
           Size = rnd.Next(18, 100),
-          DateOfBirth = randomDate.Next(),
+          DateOfBirth = weakPseudoRandomDate.Next(),
           IsActiveFlag = Convert.ToBoolean(rnd.Next(0, 100) % 2),
           NumberOfVictory = rnd.Next(0, 100),
           FieldGoalPercentage = Convert.ToDouble(rnd.Next(0, 100)) / 100,
@@ -122,7 +124,7 @@ namespace ConsoleApp
       var worksheetDfn = new WorksheetDfn("Team");
       workbookDfn.Worksheets.Add(worksheetDfn);
       Random rnd = new Random();
-      RandomDateTime randomDate = new RandomDateTime();
+      WeakPseudoRandomDateTime weakPseudoRandomDate = new WeakPseudoRandomDateTime();
       Console.WriteLine("Generating the players...");
       Stopwatch stopwatch = new Stopwatch();
       stopwatch.Start();
@@ -135,7 +137,7 @@ namespace ConsoleApp
             new CellDfn($"Code{i}"),
             new CellDfn($"Player{i}"),
             new CellDfn(rnd.Next(18, 100), cellDataType: CellDataType.Number),
-            new CellDfn(randomDate.Next(), cellDataType: CellDataType.Date),
+            new CellDfn(weakPseudoRandomDate.Next(), cellDataType: CellDataType.Date),
             new CellDfn(Convert.ToBoolean(rnd.Next(0, 100) % 2), cellDataType: CellDataType.Boolean),
             new CellDfn(rnd.Next(0, 100), cellDataType: CellDataType.Number),
             new CellDfn(Convert.ToDouble(rnd.Next(0, 100)) / 100, cellDataType: CellDataType.Percentage),
