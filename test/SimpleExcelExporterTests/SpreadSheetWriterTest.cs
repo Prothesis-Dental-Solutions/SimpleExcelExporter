@@ -100,7 +100,7 @@
     [Test]
     public void SpreadsheetExportSheetNameLengthTest()
     {
-      // Prepare a non empty workbook
+      // Prepare a non-empty workbook
       var tooLongSheetName = "Name with something bigger than 31 characters.";
       var workBookDfn = WorkbookDfnPreparator.First();
       workBookDfn.Worksheets.Add(new WorksheetDfn(tooLongSheetName));
