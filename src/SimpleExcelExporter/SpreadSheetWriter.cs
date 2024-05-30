@@ -64,7 +64,7 @@
       CreatePartsForExcel(document);
     }
 
-    private static void AddHeaderCellToWorkSheet(WorksheetDfn worksheetDfn, string text, decimal index)
+    private static void AddHeaderCellToWorkSheet(WorksheetDfn worksheetDfn, string text, List<int> index)
     {
       CellDfn headerCellDfn = new CellDfn(text, index: index);
       worksheetDfn.ColumnHeadings.Cells.Add(headerCellDfn);
@@ -75,7 +75,7 @@
       RowDfn rowDfn,
       CellDefinitionAttribute? cellDefinitionAttribute,
       PropertyInfo playerTypePropertyInfo,
-      decimal index)
+      List<int> index)
     {
       if (player == null)
       {
@@ -100,7 +100,7 @@
     private static void CreateEmptyCellToRow(
       RowDfn rowDfn,
       CellDefinitionAttribute? cellDefinitionAttribute,
-      decimal index)
+      List<int> index)
     {
       CellDfn cellDfn;
       if (cellDefinitionAttribute != null)
@@ -145,7 +145,7 @@
       RowDfn rowDfn,
       int iteration,
       int depth,
-      decimal parentIndex)
+      List<int>? parentIndex)
     {
       foreach (var playerTypePropertyInfo in playerTypePropertyInfos)
       {
@@ -156,19 +156,17 @@
 
         // TODO - Yanal - relire ce code
         // Index management
-        decimal index = parentIndex;
-        long power = (long)Math.Pow(10, depth);
+        List<int> index = parentIndex ?? new List<int>();
         int iterationIncrement = 0;
         if (iteration > 0)
         {
-          index += decimal.Divide(iteration, power);
+          index.Add(iteration);
           iterationIncrement = 1;
         }
 
         if (indexAttribute != null)
         {
-          power = (long)Math.Pow(10, depth + iterationIncrement);
-          index += decimal.Divide(indexAttribute.Index, power);
+          index.Add(indexAttribute.Index);
         }
 
         if (multiColumnAttribute != null)
@@ -241,7 +239,7 @@
       PropertyInfo[] playerTypePropertyInfos,
       int iteration,
       int depth,
-      decimal parentIndex)
+      List<int>? parentIndex)
     {
       foreach (var playerTypePropertyInfo in playerTypePropertyInfos)
       {
@@ -251,19 +249,17 @@
 
         // TODO - Yanal - relire ce code
         // Index management
-        decimal index = parentIndex;
-        long power = (long)Math.Pow(10, depth);
+        List<int> index = parentIndex ?? new List<int>();
         int iterationIncrement = 0;
         if (iteration > 0)
         {
-          index += decimal.Divide(iteration, power);
+          index.Add(iteration);
           iterationIncrement = 1;
         }
 
         if (indexAttribute != null)
         {
-          power = (long)Math.Pow(10, depth + iterationIncrement);
-          index += decimal.Divide(indexAttribute.Index, power);
+          index.Add(indexAttribute.Index);
         }
 
         if (multiColumnAttribute != null)
@@ -327,7 +323,8 @@
         {
           if (ignoreFromSpreadSheetAttribute?.IgnoreFlag != true)
           {
-            string key = $"{playerTypePropertyInfo.Module.MetadataToken}_{playerTypePropertyInfo.MetadataToken}_{index}";
+            Console.WriteLine(string.Join("_", index));
+            string key = $"{playerTypePropertyInfo.Module.MetadataToken}_{playerTypePropertyInfo.MetadataToken}_{string.Join("_", index)}";
             if (_headers.Add(key))
             {
               HeaderAttribute? headerAttribute = GetAttributeFrom<HeaderAttribute>(playerTypePropertyInfo);
@@ -414,7 +411,7 @@
               {
                 var playerType = player.GetType();
                 PropertyInfo[] playerTypePropertyInfos = playerType.GetProperties();
-                AddHeaderCellsToRowFromObjectPropertyInfos(worksheetDfn, player, playerType, playerTypePropertyInfos, 0, 0, 0);
+                AddHeaderCellsToRowFromObjectPropertyInfos(worksheetDfn, player, playerType, playerTypePropertyInfos, 0, 0, null);
               }
             }
 
@@ -427,7 +424,7 @@
                 PropertyInfo[] playerTypePropertyInfos = playerType.GetProperties();
                 RowDfn rowDfn = new RowDfn();
                 worksheetDfn.Rows.Add(rowDfn);
-                AddCellsToRowFromObjectPropertyInfos(player, playerTypePropertyInfos, rowDfn, 0, 0, 0);
+                AddCellsToRowFromObjectPropertyInfos(player, playerTypePropertyInfos, rowDfn, 0, 0, null);
               }
             }
           }
