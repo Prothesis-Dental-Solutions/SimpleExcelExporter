@@ -20,11 +20,51 @@ namespace ConsoleApp
       var tempDi = new DirectoryInfo($"ExampleOutput-{n.Year - 2000:00}-{n.Month:00}-{n.Day:00}-{n.Hour:00}{n.Minute:00}{n.Second:00}");
       tempDi.Create();
 
-      GenerateSpreadSheetFromWorkbookDfn(tempDi);
-      GenerateSpreadSheetFromAnnotatedDataEmpty(tempDi);
-      GenerateSpreadSheetFromAnnotatedData(tempDi);
-      GenerateBigSpreadsheetFromAnnotatedData(tempDi);
-      GenerateBigSpreadsheetFromWorkBookDfn(tempDi);
+      //// GenerateSpreadSheetFromWorkbookDfn(tempDi);
+      //// GenerateSpreadSheetFromAnnotatedDataEmpty(tempDi);
+      //// GenerateSpreadSheetFromAnnotatedData(tempDi);
+      //// GenerateBigSpreadsheetFromAnnotatedData(tempDi);
+      //// GenerateBigSpreadsheetFromWorkBookDfn(tempDi);
+      GenerateSpreadsheetFromGroup(tempDi);
+    }
+
+    public static void GenerateSpreadsheetFromGroup(DirectoryInfo tempDi)
+    {
+      Console.WriteLine("GenerateBigSpreadsheetFromAnnotatedData");
+      using var memoryStream = new MemoryStream();
+      using var streamWriter = new StreamWriter(memoryStream);
+      Stopwatch stopwatch = new Stopwatch();
+      stopwatch.Start();
+      var group = new Group();
+      var person = new Person { Name = "0" };
+      group.Persons.Add(person);
+      Person currentPerson = person;
+      for (int i = 1; i < 11; i++)
+      {
+        var child = new Person { Name = i.ToString() };
+        currentPerson.Children.Add(child);
+        currentPerson = child;
+      }
+
+      stopwatch.Stop();
+      Console.WriteLine($"Done in {stopwatch.Elapsed.Seconds} seconds !");
+
+      Console.WriteLine("Instantiating the SpreadsheetWriter...");
+      stopwatch.Reset();
+      stopwatch.Start();
+      SpreadsheetWriter spreadsheetWriter = new SpreadsheetWriter(streamWriter.BaseStream, group);
+      stopwatch.Stop();
+      Console.WriteLine($"Done in {stopwatch.Elapsed.Seconds} seconds !");
+
+      Console.WriteLine("Writing the Excel file...");
+      stopwatch.Reset();
+      stopwatch.Start();
+      spreadsheetWriter.Write();
+      stopwatch.Stop();
+      Console.WriteLine($"Done in {stopwatch.Elapsed.Seconds} seconds !");
+
+      using FileStream file = new FileStream(Path.Combine(tempDi.FullName, "TestWithData3.xlsx"), FileMode.Create, FileAccess.Write);
+      memoryStream.WriteTo(file);
     }
 
     private static void GenerateBigSpreadsheetFromAnnotatedData(DirectoryInfo tempDi)

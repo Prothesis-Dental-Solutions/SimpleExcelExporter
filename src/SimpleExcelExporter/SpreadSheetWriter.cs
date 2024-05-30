@@ -144,7 +144,7 @@
       PropertyInfo[] playerTypePropertyInfos,
       RowDfn rowDfn,
       int iteration,
-      int deep,
+      int depth,
       decimal parentIndex)
     {
       foreach (var playerTypePropertyInfo in playerTypePropertyInfos)
@@ -157,7 +157,7 @@
         // TODO - Yanal - relire ce code
         // Index management
         decimal index = parentIndex;
-        int power = (int)Math.Pow(10, deep);
+        long power = (long)Math.Pow(10, depth);
         int iterationIncrement = 0;
         if (iteration > 0)
         {
@@ -167,7 +167,7 @@
 
         if (indexAttribute != null)
         {
-          power = (int)Math.Pow(10, deep + iterationIncrement);
+          power = (long)Math.Pow(10, depth + iterationIncrement);
           index += decimal.Divide(indexAttribute.Index, power);
         }
 
@@ -178,7 +178,7 @@
           {
             object[] childPlayers = childPlayersEnumerable.ToArray();
             int maxNumberOfElement = multiColumnAttribute.MaxNumberOfElement;
-            int childDeep = deep + maxNumberOfElement.ToString().Length;
+            int childDepth = depth + maxNumberOfElement.ToString().Length;
             int currentIteration = 1;
             Type? childPlayerType = null;
             PropertyInfo[]? childPlayerTypePropertyInfos = null;
@@ -186,7 +186,7 @@
             {
               childPlayerType = childPlayer.GetType();
               childPlayerTypePropertyInfos = childPlayerType.GetProperties();
-              AddCellsToRowFromObjectPropertyInfos(childPlayer, childPlayerTypePropertyInfos, rowDfn, currentIteration, childDeep + iterationIncrement, index);
+              AddCellsToRowFromObjectPropertyInfos(childPlayer, childPlayerTypePropertyInfos, rowDfn, currentIteration, childDepth + iterationIncrement, index);
               currentIteration++;
             }
 
@@ -196,7 +196,7 @@
             {
               for (int i = 0; i < numberOfEmptyCellToAdd; i++)
               {
-                AddCellsToRowFromObjectPropertyInfos(null, childPlayerTypePropertyInfos, rowDfn, currentIteration, childDeep + iterationIncrement, index);
+                AddCellsToRowFromObjectPropertyInfos(null, childPlayerTypePropertyInfos, rowDfn, currentIteration, childDepth + iterationIncrement, index);
                 currentIteration++;
               }
             }
@@ -205,7 +205,7 @@
           {
             // Add empty cells if needed
             int maxNumberOfElement = multiColumnAttribute.MaxNumberOfElement;
-            int childDeep = deep + maxNumberOfElement.ToString().Length;
+            int childDepth = depth + maxNumberOfElement.ToString().Length;
             int numberOfEmptyCellToAdd = maxNumberOfElement;
             int currentIteration = 1;
             Type? childPlayerType = playerTypePropertyInfo.PropertyType.GenericTypeArguments.FirstOrDefault();
@@ -214,7 +214,7 @@
               PropertyInfo[] childPlayerTypePropertyInfos = childPlayerType.GetProperties(BindingFlags.GetProperty | BindingFlags.Public | BindingFlags.Instance | BindingFlags.Static);
               for (int i = 0; i < numberOfEmptyCellToAdd; i++)
               {
-                AddCellsToRowFromObjectPropertyInfos(null, childPlayerTypePropertyInfos, rowDfn, currentIteration, childDeep + iterationIncrement, index);
+                AddCellsToRowFromObjectPropertyInfos(null, childPlayerTypePropertyInfos, rowDfn, currentIteration, childDepth + iterationIncrement, index);
                 currentIteration++;
               }
             }
@@ -240,7 +240,7 @@
       Type playerType,
       PropertyInfo[] playerTypePropertyInfos,
       int iteration,
-      int deep,
+      int depth,
       decimal parentIndex)
     {
       foreach (var playerTypePropertyInfo in playerTypePropertyInfos)
@@ -252,7 +252,7 @@
         // TODO - Yanal - relire ce code
         // Index management
         decimal index = parentIndex;
-        int power = (int)Math.Pow(10, deep);
+        long power = (long)Math.Pow(10, depth);
         int iterationIncrement = 0;
         if (iteration > 0)
         {
@@ -262,7 +262,7 @@
 
         if (indexAttribute != null)
         {
-          power = (int)Math.Pow(10, deep + iterationIncrement);
+          power = (long)Math.Pow(10, depth + iterationIncrement);
           index += decimal.Divide(indexAttribute.Index, power);
         }
 
@@ -273,7 +273,7 @@
           {
             // Add empty cells if needed
             int maxNumberOfElement = multiColumnAttribute.MaxNumberOfElement;
-            int childDeep = deep + maxNumberOfElement.ToString().Length;
+            int childDepth = depth + maxNumberOfElement.ToString().Length;
             int numberOfEmptyCellToAdd = maxNumberOfElement;
             int currentIteration = 1;
             Type? childPlayerType = playerTypePropertyInfo.PropertyType.GenericTypeArguments.FirstOrDefault();
@@ -282,7 +282,7 @@
               PropertyInfo[] childPlayerTypePropertyInfos = childPlayerType.GetProperties(BindingFlags.GetProperty | BindingFlags.Public | BindingFlags.Instance | BindingFlags.Static);
               for (int i = 0; i < numberOfEmptyCellToAdd; i++)
               {
-                AddHeaderCellsToRowFromObjectPropertyInfos(worksheetDfn, null, childPlayerType, childPlayerTypePropertyInfos, currentIteration, childDeep + iterationIncrement, index);
+                AddHeaderCellsToRowFromObjectPropertyInfos(worksheetDfn, null, childPlayerType, childPlayerTypePropertyInfos, currentIteration, childDepth + iterationIncrement, index);
                 currentIteration++;
               }
             }
@@ -295,7 +295,7 @@
           {
             object[] childPlayers = childPlayersEnumerable.ToArray();
             int maxNumberOfElement = multiColumnAttribute.MaxNumberOfElement;
-            int childDeep = deep + maxNumberOfElement.ToString().Length;
+            int childDepth = depth + maxNumberOfElement.ToString().Length;
             int currentIteration = 1;
             Type? childPlayerType = null;
             PropertyInfo[]? childPlayerTypePropertyInfos = null;
@@ -303,7 +303,7 @@
             {
               childPlayerType = childPlayer.GetType();
               childPlayerTypePropertyInfos = childPlayerType.GetProperties();
-              AddHeaderCellsToRowFromObjectPropertyInfos(worksheetDfn, childPlayer, childPlayerType, childPlayerTypePropertyInfos, currentIteration, childDeep + iterationIncrement, index);
+              AddHeaderCellsToRowFromObjectPropertyInfos(worksheetDfn, childPlayer, childPlayerType, childPlayerTypePropertyInfos, currentIteration, childDepth + iterationIncrement, index);
               currentIteration++;
             }
 
@@ -313,7 +313,7 @@
             {
               for (int i = 0; i < numberOfEmptyCellToAdd; i++)
               {
-                AddHeaderCellsToRowFromObjectPropertyInfos(worksheetDfn, null, childPlayerType, childPlayerTypePropertyInfos, currentIteration, childDeep + iterationIncrement, index);
+                AddHeaderCellsToRowFromObjectPropertyInfos(worksheetDfn, null, childPlayerType, childPlayerTypePropertyInfos, currentIteration, childDepth + iterationIncrement, index);
                 currentIteration++;
               }
             }
