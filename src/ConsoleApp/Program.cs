@@ -242,6 +242,7 @@ namespace ConsoleApp
                new () { FirstName = "FirstName1", Age = 33 },
              },
             GamePlayed = 12,
+            HeaderName0 = "abc",
           },
           new Player
           {
@@ -259,6 +260,7 @@ namespace ConsoleApp
                new () { FirstName = "FirstName1", Age = 11 },
              },
             GamePlayed = 10,
+            HeaderName0 = "abc",
           },
           new Player
           {
@@ -272,6 +274,7 @@ namespace ConsoleApp
             FieldGoalPercentage = 0.33,
             Salary = 2111.5452m,
             GamePlayed = 8,
+            HeaderName0 = "abc",
           },
           new Player
           {
@@ -285,6 +288,7 @@ namespace ConsoleApp
             FieldGoalPercentage = 0.4,
             Salary = 2845.719m,
             GamePlayed = 6,
+            HeaderName0 = "abc",
           },
         },
       };
