@@ -28,7 +28,7 @@ namespace ConsoleApp
       GenerateSpreadsheetFromGroup(tempDi);
     }
 
-    public static void GenerateSpreadsheetFromGroup(DirectoryInfo tempDi)
+    private static void GenerateSpreadsheetFromGroup(DirectoryInfo tempDi)
     {
       Console.WriteLine("GenerateBigSpreadsheetFromAnnotatedData");
       using var memoryStream = new MemoryStream();
@@ -44,7 +44,7 @@ namespace ConsoleApp
         var child = new Person { Name = $"{i}_0" };
         currentPerson.Children.Add(child);
 
-        for (int j = 1; j < 100; j++)
+        for (int j = 1; j < 16383; j++)
         {
           child = new Person { Name = $"{i}_{j}" };
           currentPerson.Children.Add(child);
@@ -70,7 +70,7 @@ namespace ConsoleApp
       stopwatch.Stop();
       Console.WriteLine($"Done in {stopwatch.Elapsed.Seconds} seconds !");
 
-      using FileStream file = new FileStream(Path.Combine(tempDi.FullName, "TestWithData3.xlsx"), FileMode.Create, FileAccess.Write);
+      using FileStream file = new FileStream(Path.Combine(tempDi.FullName, "TestWithData5.xlsx"), FileMode.Create, FileAccess.Write);
       memoryStream.WriteTo(file);
     }
 

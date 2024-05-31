@@ -163,69 +163,74 @@
       int iteration,
       List<int>? parentIndex)
     {
-      foreach (var playerTypePropertyInfo in playerTypePropertyInfos)
-      {
-        CellDefinitionAttribute? cellDefinitionAttribute = GetAttributeFrom<CellDefinitionAttribute>(playerTypePropertyInfo);
-        IndexAttribute? indexAttribute = GetAttributeFrom<IndexAttribute>(playerTypePropertyInfo);
-        IgnoreFromSpreadSheetAttribute? ignoreFromSpreadSheetAttribute = GetAttributeFrom<IgnoreFromSpreadSheetAttribute>(playerTypePropertyInfo);
-        MultiColumnAttribute? multiColumnAttribute = GetAttributeFrom<MultiColumnAttribute>(playerTypePropertyInfo);
-        List<int> index = ManageIndex(iteration, parentIndex, indexAttribute);
-        if (multiColumnAttribute != null)
-        {
-          // Retrieve child object
-          if (player != null && playerTypePropertyInfo.GetValue(player) is IEnumerable<object> childPlayersEnumerable)
-          {
-            object[] childPlayers = childPlayersEnumerable.ToArray();
-            int maxNumberOfElement = multiColumnAttribute.MaxNumberOfElement;
-            int currentIteration = 1;
-            Type? childPlayerType = null;
-            PropertyInfo[]? childPlayerTypePropertyInfos = null;
-            foreach (object? childPlayer in childPlayers)
-            {
-              childPlayerType = childPlayer.GetType();
-              childPlayerTypePropertyInfos = childPlayerType.GetProperties();
-              AddCellsToRowFromObjectPropertyInfos(childPlayer, childPlayerTypePropertyInfos, rowDfn, currentIteration, index);
-              currentIteration++;
-            }
+      var objectQueue = new Queue<(object?, PropertyInfo[], int, List<int>?)>(); // Use a queue to manage child objects
+      objectQueue.Enqueue((player, playerTypePropertyInfos, iteration, parentIndex));
 
-            // Add empty cells if needed
-            int numberOfEmptyCellToAdd = maxNumberOfElement - childPlayers.Length;
-            if (childPlayerType != null && childPlayerTypePropertyInfos != null && numberOfEmptyCellToAdd > 0)
+      while (objectQueue.Count > 0)
+      {
+        (object? currentPlayer, PropertyInfo[] currentPlayerTypePropertyInfos, int currentIteration, List<int>? currentParentIndex) = objectQueue.Dequeue();
+
+        foreach (var playerTypePropertyInfo in currentPlayerTypePropertyInfos)
+        {
+          CellDefinitionAttribute? cellDefinitionAttribute = GetAttributeFrom<CellDefinitionAttribute>(playerTypePropertyInfo);
+          IndexAttribute? indexAttribute = GetAttributeFrom<IndexAttribute>(playerTypePropertyInfo);
+          IgnoreFromSpreadSheetAttribute? ignoreFromSpreadSheetAttribute = GetAttributeFrom<IgnoreFromSpreadSheetAttribute>(playerTypePropertyInfo);
+          MultiColumnAttribute? multiColumnAttribute = GetAttributeFrom<MultiColumnAttribute>(playerTypePropertyInfo);
+          List<int> index = ManageIndex(currentIteration, currentParentIndex, indexAttribute);
+          if (multiColumnAttribute != null)
+          {
+            if (currentPlayer != null && playerTypePropertyInfo.GetValue(currentPlayer) is IEnumerable<object> childPlayersEnumerable)
             {
-              for (int i = 0; i < numberOfEmptyCellToAdd; i++)
+              object[] childPlayers = childPlayersEnumerable.ToArray();
+              int maxNumberOfElement = multiColumnAttribute.MaxNumberOfElement;
+              int childIteration = 1;
+              Type? childPlayerType = null;
+              PropertyInfo[]? childPlayerTypePropertyInfos = null;
+              foreach (object? childPlayer in childPlayers)
               {
-                AddCellsToRowFromObjectPropertyInfos(null, childPlayerTypePropertyInfos, rowDfn, currentIteration, index);
-                currentIteration++;
+                childPlayerType = childPlayer.GetType();
+                childPlayerTypePropertyInfos = childPlayerType.GetProperties();
+                objectQueue.Enqueue((childPlayer, childPlayerTypePropertyInfos, childIteration, index)); // Push child object for later processing
+                childIteration++;
+              }
+
+              // Add empty cells if needed
+              int numberOfEmptyCellToAdd = maxNumberOfElement - childPlayers.Length;
+              if (childPlayerType != null && childPlayerTypePropertyInfos != null && numberOfEmptyCellToAdd > 0)
+              {
+                for (int i = 0; i < numberOfEmptyCellToAdd; i++)
+                {
+                  objectQueue.Enqueue((null, childPlayerTypePropertyInfos, childIteration, index));
+                  childIteration++;
+                }
+              }
+            }
+            else
+            {
+              // Add empty cells if needed
+              int maxNumberOfElement = multiColumnAttribute.MaxNumberOfElement;
+              int numberOfEmptyCellToAdd = maxNumberOfElement;
+              Type? childPlayerType = playerTypePropertyInfo.PropertyType.GenericTypeArguments.FirstOrDefault();
+              if (childPlayerType != null)
+              {
+                PropertyInfo[] childPlayerTypePropertyInfos = childPlayerType.GetProperties(BindingFlags.GetProperty | BindingFlags.Public | BindingFlags.Instance | BindingFlags.Static);
+                for (int i = 0; i < numberOfEmptyCellToAdd; i++)
+                {
+                  objectQueue.Enqueue((null, childPlayerTypePropertyInfos, i + 1, index));
+                }
+              }
+              else
+              {
+                CreateEmptyCellToRow(rowDfn, cellDefinitionAttribute, index);
               }
             }
           }
           else
           {
-            // Add empty cells if needed
-            int maxNumberOfElement = multiColumnAttribute.MaxNumberOfElement;
-            int numberOfEmptyCellToAdd = maxNumberOfElement;
-            int currentIteration = 1;
-            Type? childPlayerType = playerTypePropertyInfo.PropertyType.GenericTypeArguments.FirstOrDefault();
-            if (childPlayerType != null)
+            if (ignoreFromSpreadSheetAttribute?.IgnoreFlag != true)
             {
-              PropertyInfo[] childPlayerTypePropertyInfos = childPlayerType.GetProperties(BindingFlags.GetProperty | BindingFlags.Public | BindingFlags.Instance | BindingFlags.Static);
-              for (int i = 0; i < numberOfEmptyCellToAdd; i++)
-              {
-                AddCellsToRowFromObjectPropertyInfos(null, childPlayerTypePropertyInfos, rowDfn, currentIteration, index);
-                currentIteration++;
-              }
+              CreateCellToRow(currentPlayer, rowDfn, cellDefinitionAttribute, playerTypePropertyInfo, index);
             }
-            else
-            {
-              CreateEmptyCellToRow(rowDfn, cellDefinitionAttribute, index);
-            }
-          }
-        }
-        else
-        {
-          if (ignoreFromSpreadSheetAttribute?.IgnoreFlag != true)
-          {
-            CreateCellToRow(player, rowDfn, cellDefinitionAttribute, playerTypePropertyInfo, index);
           }
         }
       }
@@ -239,93 +244,94 @@
       int iteration,
       List<int>? parentIndex)
     {
-      foreach (var playerTypePropertyInfo in playerTypePropertyInfos)
+      var objectQueue = new Queue<(object?, Type, PropertyInfo[], int, List<int>?)>(); // Use a queue to manage child objects
+      objectQueue.Enqueue((player, playerType, playerTypePropertyInfos, iteration, parentIndex));
+
+      while (objectQueue.Count > 0)
       {
-        IndexAttribute? indexAttribute = GetAttributeFrom<IndexAttribute>(playerTypePropertyInfo);
-        IgnoreFromSpreadSheetAttribute? ignoreFromSpreadSheetAttribute = GetAttributeFrom<IgnoreFromSpreadSheetAttribute>(playerTypePropertyInfo);
-        MultiColumnAttribute? multiColumnAttribute = GetAttributeFrom<MultiColumnAttribute>(playerTypePropertyInfo);
-        List<int> index = ManageIndex(iteration, parentIndex, indexAttribute);
-        if (multiColumnAttribute != null)
+        (object? currentPlayer, Type currentPlayerType, PropertyInfo[] currentPlayerTypePropertyInfos, int currentIteration, List<int>? currentParentIndex) = objectQueue.Dequeue();
+
+        foreach (var playerTypePropertyInfo in currentPlayerTypePropertyInfos)
         {
-          // Retrieve child object
-          if (player == null)
+          IndexAttribute? indexAttribute = GetAttributeFrom<IndexAttribute>(playerTypePropertyInfo);
+          IgnoreFromSpreadSheetAttribute? ignoreFromSpreadSheetAttribute = GetAttributeFrom<IgnoreFromSpreadSheetAttribute>(playerTypePropertyInfo);
+          MultiColumnAttribute? multiColumnAttribute = GetAttributeFrom<MultiColumnAttribute>(playerTypePropertyInfo);
+          List<int> index = ManageIndex(currentIteration, currentParentIndex, indexAttribute);
+          if (multiColumnAttribute != null)
           {
-            // Add empty cells if needed
-            int maxNumberOfElement = multiColumnAttribute.MaxNumberOfElement;
-            int numberOfEmptyCellToAdd = maxNumberOfElement;
-            int currentIteration = 1;
-            Type? childPlayerType = playerTypePropertyInfo.PropertyType.GenericTypeArguments.FirstOrDefault();
-            if (childPlayerType != null)
+            if (currentPlayer != null && playerTypePropertyInfo.GetValue(currentPlayer) is IEnumerable<object> childPlayersEnumerable)
             {
-              PropertyInfo[] childPlayerTypePropertyInfos = childPlayerType.GetProperties(BindingFlags.GetProperty | BindingFlags.Public | BindingFlags.Instance | BindingFlags.Static);
-              for (int i = 0; i < numberOfEmptyCellToAdd; i++)
+              object[] childPlayers = childPlayersEnumerable.ToArray();
+              int maxNumberOfElement = multiColumnAttribute.MaxNumberOfElement;
+              int childIteration = 1;
+              Type? childPlayerType = null;
+              PropertyInfo[]? childPlayerTypePropertyInfos = null;
+              foreach (object? childPlayer in childPlayers)
               {
-                AddHeaderCellsToRowFromObjectPropertyInfos(worksheetDfn, null, childPlayerType, childPlayerTypePropertyInfos, currentIteration, index);
-                currentIteration++;
+                childPlayerType = childPlayer.GetType();
+                childPlayerTypePropertyInfos = childPlayerType.GetProperties();
+                objectQueue.Enqueue((childPlayer, childPlayerType, childPlayerTypePropertyInfos, childIteration, index)); // Push child object for later processing
+                childIteration++;
+              }
+
+              // Add empty cells if needed
+              int numberOfEmptyCellToAdd = maxNumberOfElement - childPlayers.Length;
+              if (childPlayerType != null && childPlayerTypePropertyInfos != null && numberOfEmptyCellToAdd > 0)
+              {
+                for (int i = 0; i < numberOfEmptyCellToAdd; i++)
+                {
+                  objectQueue.Enqueue((null, childPlayerType, childPlayerTypePropertyInfos, childIteration, index));
+                  childIteration++;
+                }
               }
             }
             else
             {
-              AddHeaderCellToWorkSheet(worksheetDfn, string.Empty, index);
-            }
-          }
-          else if (playerTypePropertyInfo.GetValue(player) is IEnumerable<object> childPlayersEnumerable)
-          {
-            object[] childPlayers = childPlayersEnumerable.ToArray();
-            int maxNumberOfElement = multiColumnAttribute.MaxNumberOfElement;
-            int currentIteration = 1;
-            Type? childPlayerType = null;
-            PropertyInfo[]? childPlayerTypePropertyInfos = null;
-            foreach (object? childPlayer in childPlayers)
-            {
-              childPlayerType = childPlayer.GetType();
-              childPlayerTypePropertyInfos = childPlayerType.GetProperties();
-              AddHeaderCellsToRowFromObjectPropertyInfos(worksheetDfn, childPlayer, childPlayerType, childPlayerTypePropertyInfos, currentIteration, index);
-              currentIteration++;
-            }
-
-            // Add empty cells if needed
-            int numberOfEmptyCellToAdd = maxNumberOfElement - childPlayers.Length;
-            if (childPlayerType != null && childPlayerTypePropertyInfos != null && numberOfEmptyCellToAdd > 0)
-            {
-              for (int i = 0; i < numberOfEmptyCellToAdd; i++)
+              // Add empty cells if needed
+              int maxNumberOfElement = multiColumnAttribute.MaxNumberOfElement;
+              int numberOfEmptyCellToAdd = maxNumberOfElement;
+              Type? childPlayerType = playerTypePropertyInfo.PropertyType.GenericTypeArguments.FirstOrDefault();
+              if (childPlayerType != null)
               {
-                AddHeaderCellsToRowFromObjectPropertyInfos(worksheetDfn, null, childPlayerType, childPlayerTypePropertyInfos, currentIteration, index);
-                currentIteration++;
-              }
-            }
-          }
-          else if (playerTypePropertyInfo.GetValue(player) != null)
-          {
-            AddHeaderCellToWorkSheet(worksheetDfn, string.Empty, index);
-          }
-        }
-        else
-        {
-          if (ignoreFromSpreadSheetAttribute?.IgnoreFlag != true)
-          {
-            string key = $"{playerTypePropertyInfo.Module.MetadataToken}_{playerTypePropertyInfo.MetadataToken}_{string.Join("_", index)}";
-            if (_headers.Add(key))
-            {
-              HeaderAttribute? headerAttribute = GetAttributeFrom<HeaderAttribute>(playerTypePropertyInfo);
-              if (headerAttribute != null)
-              {
-                // TODO - et si le header n'est pas défini ?
-                string text = headerAttribute.Text;
-                if (headerAttribute.TextToAddToHeader != null)
+                PropertyInfo[] childPlayerTypePropertyInfos = childPlayerType.GetProperties(BindingFlags.GetProperty | BindingFlags.Public | BindingFlags.Instance | BindingFlags.Static);
+                for (int i = 0; i < numberOfEmptyCellToAdd; i++)
                 {
-                  PropertyInfo? textToAddToHeaderPropertyInfo = playerType.GetProperty(headerAttribute.TextToAddToHeader);
-                  if (textToAddToHeaderPropertyInfo != null && textToAddToHeaderPropertyInfo.GetValue(player, null) != null)
-                  {
-                    text = string.Format(text, textToAddToHeaderPropertyInfo.GetValue(player, null));
-                  }
+                  objectQueue.Enqueue((null, childPlayerType, childPlayerTypePropertyInfos, i + 1, index));
                 }
-
-                AddHeaderCellToWorkSheet(worksheetDfn, text, index);
               }
               else
               {
                 AddHeaderCellToWorkSheet(worksheetDfn, string.Empty, index);
+              }
+            }
+          }
+          else
+          {
+            if (ignoreFromSpreadSheetAttribute?.IgnoreFlag != true)
+            {
+              string key = $"{playerTypePropertyInfo.Module.MetadataToken}_{playerTypePropertyInfo.MetadataToken}_{string.Join("_", index)}";
+              if (_headers.Add(key))
+              {
+                HeaderAttribute? headerAttribute = GetAttributeFrom<HeaderAttribute>(playerTypePropertyInfo);
+                if (headerAttribute != null)
+                {
+                  // TODO - et si le header n'est pas défini ?
+                  string text = headerAttribute.Text;
+                  if (headerAttribute.TextToAddToHeader != null)
+                  {
+                    PropertyInfo? textToAddToHeaderPropertyInfo = currentPlayerType.GetProperty(headerAttribute.TextToAddToHeader);
+                    if (textToAddToHeaderPropertyInfo != null && textToAddToHeaderPropertyInfo.GetValue(currentPlayer, null) != null)
+                    {
+                      text = string.Format(text, textToAddToHeaderPropertyInfo.GetValue(currentPlayer, null));
+                    }
+                  }
+
+                  AddHeaderCellToWorkSheet(worksheetDfn, text, index);
+                }
+                else
+                {
+                  AddHeaderCellToWorkSheet(worksheetDfn, string.Empty, index);
+                }
               }
             }
           }
