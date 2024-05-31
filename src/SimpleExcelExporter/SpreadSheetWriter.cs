@@ -139,12 +139,28 @@
       worksheetPart.Worksheet = worksheet;
     }
 
+    private static List<int> ManageIndex(int iteration, List<int>? parentIndex, IndexAttribute? indexAttribute)
+    {
+      // Index management
+      List<int> index = parentIndex ?? new List<int>();
+      if (iteration > 0)
+      {
+        index.Add(iteration);
+      }
+
+      if (indexAttribute != null)
+      {
+        index.Add(indexAttribute.Index);
+      }
+
+      return index;
+    }
+
     private void AddCellsToRowFromObjectPropertyInfos(
       object? player,
       PropertyInfo[] playerTypePropertyInfos,
       RowDfn rowDfn,
       int iteration,
-      int depth,
       List<int>? parentIndex)
     {
       foreach (var playerTypePropertyInfo in playerTypePropertyInfos)
@@ -153,22 +169,7 @@
         IndexAttribute? indexAttribute = GetAttributeFrom<IndexAttribute>(playerTypePropertyInfo);
         IgnoreFromSpreadSheetAttribute? ignoreFromSpreadSheetAttribute = GetAttributeFrom<IgnoreFromSpreadSheetAttribute>(playerTypePropertyInfo);
         MultiColumnAttribute? multiColumnAttribute = GetAttributeFrom<MultiColumnAttribute>(playerTypePropertyInfo);
-
-        // TODO - Yanal - relire ce code
-        // Index management
-        List<int> index = parentIndex ?? new List<int>();
-        int iterationIncrement = 0;
-        if (iteration > 0)
-        {
-          index.Add(iteration);
-          iterationIncrement = 1;
-        }
-
-        if (indexAttribute != null)
-        {
-          index.Add(indexAttribute.Index);
-        }
-
+        List<int> index = ManageIndex(iteration, parentIndex, indexAttribute);
         if (multiColumnAttribute != null)
         {
           // Retrieve child object
@@ -176,7 +177,6 @@
           {
             object[] childPlayers = childPlayersEnumerable.ToArray();
             int maxNumberOfElement = multiColumnAttribute.MaxNumberOfElement;
-            int childDepth = depth + maxNumberOfElement.ToString().Length;
             int currentIteration = 1;
             Type? childPlayerType = null;
             PropertyInfo[]? childPlayerTypePropertyInfos = null;
@@ -184,7 +184,7 @@
             {
               childPlayerType = childPlayer.GetType();
               childPlayerTypePropertyInfos = childPlayerType.GetProperties();
-              AddCellsToRowFromObjectPropertyInfos(childPlayer, childPlayerTypePropertyInfos, rowDfn, currentIteration, childDepth + iterationIncrement, index);
+              AddCellsToRowFromObjectPropertyInfos(childPlayer, childPlayerTypePropertyInfos, rowDfn, currentIteration, index);
               currentIteration++;
             }
 
@@ -194,7 +194,7 @@
             {
               for (int i = 0; i < numberOfEmptyCellToAdd; i++)
               {
-                AddCellsToRowFromObjectPropertyInfos(null, childPlayerTypePropertyInfos, rowDfn, currentIteration, childDepth + iterationIncrement, index);
+                AddCellsToRowFromObjectPropertyInfos(null, childPlayerTypePropertyInfos, rowDfn, currentIteration, index);
                 currentIteration++;
               }
             }
@@ -203,7 +203,6 @@
           {
             // Add empty cells if needed
             int maxNumberOfElement = multiColumnAttribute.MaxNumberOfElement;
-            int childDepth = depth + maxNumberOfElement.ToString().Length;
             int numberOfEmptyCellToAdd = maxNumberOfElement;
             int currentIteration = 1;
             Type? childPlayerType = playerTypePropertyInfo.PropertyType.GenericTypeArguments.FirstOrDefault();
@@ -212,7 +211,7 @@
               PropertyInfo[] childPlayerTypePropertyInfos = childPlayerType.GetProperties(BindingFlags.GetProperty | BindingFlags.Public | BindingFlags.Instance | BindingFlags.Static);
               for (int i = 0; i < numberOfEmptyCellToAdd; i++)
               {
-                AddCellsToRowFromObjectPropertyInfos(null, childPlayerTypePropertyInfos, rowDfn, currentIteration, childDepth + iterationIncrement, index);
+                AddCellsToRowFromObjectPropertyInfos(null, childPlayerTypePropertyInfos, rowDfn, currentIteration, index);
                 currentIteration++;
               }
             }
@@ -238,7 +237,6 @@
       Type playerType,
       PropertyInfo[] playerTypePropertyInfos,
       int iteration,
-      int depth,
       List<int>? parentIndex)
     {
       foreach (var playerTypePropertyInfo in playerTypePropertyInfos)
@@ -246,22 +244,7 @@
         IndexAttribute? indexAttribute = GetAttributeFrom<IndexAttribute>(playerTypePropertyInfo);
         IgnoreFromSpreadSheetAttribute? ignoreFromSpreadSheetAttribute = GetAttributeFrom<IgnoreFromSpreadSheetAttribute>(playerTypePropertyInfo);
         MultiColumnAttribute? multiColumnAttribute = GetAttributeFrom<MultiColumnAttribute>(playerTypePropertyInfo);
-
-        // TODO - Yanal - relire ce code
-        // Index management
-        List<int> index = parentIndex ?? new List<int>();
-        int iterationIncrement = 0;
-        if (iteration > 0)
-        {
-          index.Add(iteration);
-          iterationIncrement = 1;
-        }
-
-        if (indexAttribute != null)
-        {
-          index.Add(indexAttribute.Index);
-        }
-
+        List<int> index = ManageIndex(iteration, parentIndex, indexAttribute);
         if (multiColumnAttribute != null)
         {
           // Retrieve child object
@@ -269,7 +252,6 @@
           {
             // Add empty cells if needed
             int maxNumberOfElement = multiColumnAttribute.MaxNumberOfElement;
-            int childDepth = depth + maxNumberOfElement.ToString().Length;
             int numberOfEmptyCellToAdd = maxNumberOfElement;
             int currentIteration = 1;
             Type? childPlayerType = playerTypePropertyInfo.PropertyType.GenericTypeArguments.FirstOrDefault();
@@ -278,7 +260,7 @@
               PropertyInfo[] childPlayerTypePropertyInfos = childPlayerType.GetProperties(BindingFlags.GetProperty | BindingFlags.Public | BindingFlags.Instance | BindingFlags.Static);
               for (int i = 0; i < numberOfEmptyCellToAdd; i++)
               {
-                AddHeaderCellsToRowFromObjectPropertyInfos(worksheetDfn, null, childPlayerType, childPlayerTypePropertyInfos, currentIteration, childDepth + iterationIncrement, index);
+                AddHeaderCellsToRowFromObjectPropertyInfos(worksheetDfn, null, childPlayerType, childPlayerTypePropertyInfos, currentIteration, index);
                 currentIteration++;
               }
             }
@@ -291,7 +273,6 @@
           {
             object[] childPlayers = childPlayersEnumerable.ToArray();
             int maxNumberOfElement = multiColumnAttribute.MaxNumberOfElement;
-            int childDepth = depth + maxNumberOfElement.ToString().Length;
             int currentIteration = 1;
             Type? childPlayerType = null;
             PropertyInfo[]? childPlayerTypePropertyInfos = null;
@@ -299,7 +280,7 @@
             {
               childPlayerType = childPlayer.GetType();
               childPlayerTypePropertyInfos = childPlayerType.GetProperties();
-              AddHeaderCellsToRowFromObjectPropertyInfos(worksheetDfn, childPlayer, childPlayerType, childPlayerTypePropertyInfos, currentIteration, childDepth + iterationIncrement, index);
+              AddHeaderCellsToRowFromObjectPropertyInfos(worksheetDfn, childPlayer, childPlayerType, childPlayerTypePropertyInfos, currentIteration, index);
               currentIteration++;
             }
 
@@ -309,7 +290,7 @@
             {
               for (int i = 0; i < numberOfEmptyCellToAdd; i++)
               {
-                AddHeaderCellsToRowFromObjectPropertyInfos(worksheetDfn, null, childPlayerType, childPlayerTypePropertyInfos, currentIteration, childDepth + iterationIncrement, index);
+                AddHeaderCellsToRowFromObjectPropertyInfos(worksheetDfn, null, childPlayerType, childPlayerTypePropertyInfos, currentIteration, index);
                 currentIteration++;
               }
             }
@@ -323,7 +304,6 @@
         {
           if (ignoreFromSpreadSheetAttribute?.IgnoreFlag != true)
           {
-            Console.WriteLine(string.Join("_", index));
             string key = $"{playerTypePropertyInfo.Module.MetadataToken}_{playerTypePropertyInfo.MetadataToken}_{string.Join("_", index)}";
             if (_headers.Add(key))
             {
@@ -388,7 +368,7 @@
             // Create fake cell with warning message
             RowDfn rowDfn = new RowDfn();
             worksheetDfn.Rows.Add(rowDfn);
-            CellDfn cellDfn = new CellDfn(emptyExportMessage, 0);
+            CellDfn cellDfn = new CellDfn(emptyExportMessage);
             rowDfn.Cells.Add(cellDfn);
             workbookDfn.Worksheets.Add(worksheetDfn);
           }
@@ -411,7 +391,7 @@
               {
                 var playerType = player.GetType();
                 PropertyInfo[] playerTypePropertyInfos = playerType.GetProperties();
-                AddHeaderCellsToRowFromObjectPropertyInfos(worksheetDfn, player, playerType, playerTypePropertyInfos, 0, 0, null);
+                AddHeaderCellsToRowFromObjectPropertyInfos(worksheetDfn, player, playerType, playerTypePropertyInfos, 0, null);
               }
             }
 
@@ -424,7 +404,7 @@
                 PropertyInfo[] playerTypePropertyInfos = playerType.GetProperties();
                 RowDfn rowDfn = new RowDfn();
                 worksheetDfn.Rows.Add(rowDfn);
-                AddCellsToRowFromObjectPropertyInfos(player, playerTypePropertyInfos, rowDfn, 0, 0, null);
+                AddCellsToRowFromObjectPropertyInfos(player, playerTypePropertyInfos, rowDfn, 0, null);
               }
             }
           }

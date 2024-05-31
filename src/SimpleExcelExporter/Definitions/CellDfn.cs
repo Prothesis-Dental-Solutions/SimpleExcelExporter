@@ -8,7 +8,7 @@
     public CellDfn(
       object value,
       CellDataType cellDataType = CellDataType.String,
-      List<int>? index = default)
+      IList<int>? index = default)
     {
       CellDataType = cellDataType;
       Index = index ?? new List<int>();
@@ -27,7 +27,7 @@
     /// </summary>
     public object? Value { get; }
 
-    public List<int> Index { get; }
+    public IList<int> Index { get; }
 
     public int GetStyleHashCode()
     {
