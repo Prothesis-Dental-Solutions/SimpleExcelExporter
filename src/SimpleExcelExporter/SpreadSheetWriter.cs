@@ -190,7 +190,7 @@
               {
                 childPlayerType = childPlayer.GetType();
                 childPlayerTypePropertyInfos = childPlayerType.GetProperties();
-                objectQueue.Enqueue((childPlayer, childPlayerTypePropertyInfos, childIteration, index)); // Push child object for later processing
+                objectQueue.Enqueue((childPlayer, childPlayerTypePropertyInfos, childIteration, index)); // Enqueue child object for later processing
                 childIteration++;
               }
 
@@ -200,7 +200,7 @@
               {
                 for (int i = 0; i < numberOfEmptyCellToAdd; i++)
                 {
-                  objectQueue.Enqueue((null, childPlayerTypePropertyInfos, childIteration, index));
+                  objectQueue.Enqueue((null, childPlayerTypePropertyInfos, childIteration, index)); // Enqueue child object for later processing
                   childIteration++;
                 }
               }
@@ -216,7 +216,7 @@
                 PropertyInfo[] childPlayerTypePropertyInfos = childPlayerType.GetProperties(BindingFlags.GetProperty | BindingFlags.Public | BindingFlags.Instance | BindingFlags.Static);
                 for (int i = 0; i < numberOfEmptyCellToAdd; i++)
                 {
-                  objectQueue.Enqueue((null, childPlayerTypePropertyInfos, i + 1, index));
+                  objectQueue.Enqueue((null, childPlayerTypePropertyInfos, i + 1, index)); // Enqueue child object for later processing
                 }
               }
               else
@@ -270,7 +270,7 @@
               {
                 childPlayerType = childPlayer.GetType();
                 childPlayerTypePropertyInfos = childPlayerType.GetProperties();
-                objectQueue.Enqueue((childPlayer, childPlayerType, childPlayerTypePropertyInfos, childIteration, index)); // Push child object for later processing
+                objectQueue.Enqueue((childPlayer, childPlayerType, childPlayerTypePropertyInfos, childIteration, index)); // Enqueue child object for later processing
                 childIteration++;
               }
 
@@ -280,7 +280,7 @@
               {
                 for (int i = 0; i < numberOfEmptyCellToAdd; i++)
                 {
-                  objectQueue.Enqueue((null, childPlayerType, childPlayerTypePropertyInfos, childIteration, index));
+                  objectQueue.Enqueue((null, childPlayerType, childPlayerTypePropertyInfos, childIteration, index)); // Enqueue child object for later processing
                   childIteration++;
                 }
               }
@@ -296,7 +296,7 @@
                 PropertyInfo[] childPlayerTypePropertyInfos = childPlayerType.GetProperties(BindingFlags.GetProperty | BindingFlags.Public | BindingFlags.Instance | BindingFlags.Static);
                 for (int i = 0; i < numberOfEmptyCellToAdd; i++)
                 {
-                  objectQueue.Enqueue((null, childPlayerType, childPlayerTypePropertyInfos, i + 1, index));
+                  objectQueue.Enqueue((null, childPlayerType, childPlayerTypePropertyInfos, i + 1, index)); // Enqueue child object for later processing
                 }
               }
               else
