@@ -86,7 +86,7 @@
         CellDfn cellDfn;
         if (cellDefinitionAttribute != null)
         {
-          cellDfn = new CellDfn(playerTypePropertyInfo.GetValue(player) ?? string.Empty, cellDefinitionAttribute.CellDataType, index);
+          cellDfn = new CellDfn(playerTypePropertyInfo.GetValue(player) ?? string.Empty, index, cellDefinitionAttribute.CellDataType);
         }
         else
         {
@@ -105,7 +105,7 @@
       CellDfn cellDfn;
       if (cellDefinitionAttribute != null)
       {
-        cellDfn = new CellDfn(string.Empty, cellDefinitionAttribute.CellDataType, index);
+        cellDfn = new CellDfn(string.Empty, index, cellDefinitionAttribute.CellDataType);
       }
       else
       {

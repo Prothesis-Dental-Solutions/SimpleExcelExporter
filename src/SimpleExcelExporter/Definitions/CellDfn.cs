@@ -8,7 +8,17 @@
     public CellDfn(
       object value,
       CellDataType cellDataType = CellDataType.String,
-      IList<int>? index = default)
+      int index = 0)
+    {
+      CellDataType = cellDataType;
+      Index = new List<int> { index };
+      Value = value;
+    }
+
+    public CellDfn(
+      object value,
+      IList<int>? index,
+      CellDataType cellDataType = CellDataType.String)
     {
       CellDataType = cellDataType;
       Index = index ?? new List<int>();

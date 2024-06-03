@@ -11,6 +11,6 @@
       EmptyResultMessage = emptyResultMessage;
     }
 
-    public string EmptyResultMessage { get; private init; }
+    public string EmptyResultMessage { get; private set; }
   }
 }

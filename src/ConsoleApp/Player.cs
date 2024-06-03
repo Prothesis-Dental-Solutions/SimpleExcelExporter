@@ -54,11 +54,11 @@
 
     [MultiColumn]
     [Index(9)]
-    public ICollection<Child>? MaleChildren { get; init; }
+    public ICollection<Child>? MaleChildren { get; set; }
 
     [MultiColumn]
     [Index(10)]
-    public ICollection<Child>? FemaleChildren { get; init; }
+    public ICollection<Child>? FemaleChildren { get; set; }
 
     [CellDefinition(CellDataType.Number)]
     [Header(typeof(PlayerRes), "GamePlayedColumnName")]
