@@ -4,9 +4,9 @@
 
   public static class TeamWithSameColumnIndexDummyObjectPreparator
   {
-    public static TeamWithSameColumnIndexDummyObject First() => new TeamWithSameColumnIndexDummyObject();
+    public static TeamWithSameColumnIndexDummyObject First() => new();
 
-    public static TeamWithSameColumnIndexDummyObject FirstWithCollections() => new TeamWithSameColumnIndexDummyObject
+    public static TeamWithSameColumnIndexDummyObject FirstWithCollections() => new()
     {
       PlayerWithSameColumnIndexDummyObjects =
         {

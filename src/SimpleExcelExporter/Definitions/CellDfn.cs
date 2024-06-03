@@ -1,6 +1,7 @@
 ﻿namespace SimpleExcelExporter.Definitions
 {
   using System;
+  using System.Collections.Generic;
 
   public class CellDfn
   {
@@ -10,7 +11,17 @@
       int index = 0)
     {
       CellDataType = cellDataType;
-      Index = index;
+      Index = new List<int> { index };
+      Value = value;
+    }
+
+    public CellDfn(
+      object value,
+      IList<int>? index,
+      CellDataType cellDataType = CellDataType.String)
+    {
+      CellDataType = cellDataType;
+      Index = index ?? new List<int>();
       Value = value;
     }
 
@@ -26,7 +37,7 @@
     /// </summary>
     public object? Value { get; }
 
-    public int Index { get; }
+    public IList<int> Index { get; }
 
     public int GetStyleHashCode()
     {

@@ -9,7 +9,7 @@
   public class HeaderAttributeTest
   {
     [Test]
-    public void Test()
+    public void ConstructorTest()
     {
       // Prepare
       Type resourceType = typeof(PlayerDummyObjectRes);

@@ -4,7 +4,7 @@
   using SimpleExcelExporter.Definitions;
 
   [AttributeUsage(AttributeTargets.Property)]
-  public class CellDefinitionAttribute : Attribute
+  public sealed class CellDefinitionAttribute : Attribute
   {
     public CellDefinitionAttribute(
       CellDataType cellDataType)

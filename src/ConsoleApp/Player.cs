@@ -1,6 +1,7 @@
 ﻿namespace ConsoleApp
 {
   using System;
+  using System.Collections.Generic;
   using SimpleExcelExporter.Annotations;
   using SimpleExcelExporter.Definitions;
 
@@ -47,8 +48,27 @@
     public double? Size { get; set; }
 
     [CellDefinition(CellDataType.Number)]
-    [Header(typeof(PlayerRes), "SalaryColumnName")]
+    [Header(typeof(PlayerRes), "SalaryColumnName", nameof(HeaderName0))]
     [Index(7)]
     public decimal? Salary { get; set; }
+
+    [MultiColumn]
+    [Index(9)]
+    public ICollection<Child>? MaleChildren { get; set; }
+
+    [MultiColumn]
+    [Index(10)]
+    public ICollection<Child>? FemaleChildren { get; set; }
+
+    [CellDefinition(CellDataType.Number)]
+    [Header(typeof(PlayerRes), "GamePlayedColumnName")]
+    [Index(11)]
+    public decimal? GamePlayed { get; set; }
+
+    [IgnoreFromSpreadSheet]
+    public string? HeaderName0 { get; set; }
+
+    [IgnoreFromSpreadSheet]
+    public string? HeaderName1 { get; set; }
   }
 }

@@ -1,4 +1,4 @@
-﻿namespace SimpleExcelExporter.Tests
+namespace SimpleExcelExporter.Tests
 {
   using System.Collections.Generic;
   using System.IO;
@@ -26,7 +26,7 @@
       // ReSharper disable once ObjectCreationAsStatement
       Assert.Throws<DefinitionException>(() => new SpreadsheetWriter(new MemoryStream(), workBookDfn));
 
-      // Prepare a non empty workbook
+      // Prepare a non-empty workbook
       workBookDfn = WorkbookDfnPreparator.FirstFirstWithCollections();
       using var memoryStream = new MemoryStream();
 
@@ -36,7 +36,7 @@
 
       // Check
       Assert.AreNotEqual(memoryStream.Length, 0);
-      Validate(memoryStream, 1, 3, 7);
+      Validate(memoryStream, 1, 4, 7);
 
       // Prepare an object
       var team = TeamDummyObjectPreparator.First();
@@ -60,8 +60,8 @@
 
       // Check
       Assert.AreNotEqual(memoryStream.Length, 0);
-      // expected 1 sheet, 5 rows (1 header + 4 players), 10 cells 
-      Validate(memoryStream, 1, 5, 11);
+      // expected 1 sheet, 6 rows (1 header + 5 players + 2 children of player), 20 cells
+      Validate(memoryStream, 1, 7, 20);
 
       // Prepare an empty object - two properties with the same index column
       var teamWithSameColumnIndex = TeamWithSameColumnIndexDummyObjectPreparator.First();
@@ -85,10 +85,10 @@
 
       // Check
       Assert.AreNotEqual(memoryStream.Length, 0);
-      // expected 1 sheet, 4 rows (1 header + 3 players), 3 cells 
-      Validate(memoryStream, 1, 4, 3);
+      // expected 1 sheet, 4 rows (1 header + 3 players), 3 cells
+      Validate(memoryStream, 1, 4, 4);
 
-      // Prepare with object - with same sheet 
+      // Prepare with object - with same sheet
       var teamWithSameSheetName = TeamWithSameSheetNameDummyObjectPreparator.First();
       memoryStream.SetLength(0);
 
@@ -100,8 +100,8 @@
     [Test]
     public void SpreadsheetExportSheetNameLengthTest()
     {
-      // Prepare a non empty workbook
-      var tooLongSheetName = "Name with something bigger than 31 characters.";
+      // Prepare a non-empty workbook
+      const string tooLongSheetName = "Name with something bigger than 31 characters.";
       var workBookDfn = WorkbookDfnPreparator.First();
       workBookDfn.Worksheets.Add(new WorksheetDfn(tooLongSheetName));
       using var memoryStream = new MemoryStream();
@@ -116,10 +116,10 @@
       Assert.AreEqual(expected.Message, simpleExcelExporterException.Message);
     }
 
-    private static readonly List<string> ExpectedErrors = new List<string>()
-        {
-            "The attribute 't' has invalid value 'd'. The Enumeration constraint failed.",
-        };
+    private static readonly List<string> ExpectedErrors = new()
+    {
+      "The attribute 't' has invalid value 'd'. The Enumeration constraint failed.",
+    };
 
     private static void Validate(
       Stream memoryStream,
@@ -139,12 +139,12 @@
       var worksheetsPart = workbookPart!.WorksheetParts.First();
       var sheetData = worksheetsPart.Worksheet.GetFirstChild<SheetData>();
       var rows = sheetData!.Descendants<Row>().ToList();
-      var cells = rows.First().Descendants<Cell>();
+      var cells = rows[0].Descendants<Cell>();
 
       Assert.IsNotNull(workbookPart.Workbook);
       Assert.IsNotNull(workbookPart.Workbook.Sheets);
       Assert.AreEqual(expectedSheetsCount, workbookPart.Workbook.Sheets!.Count());
-      Assert.AreEqual(expectedRowsCount, rows.Count());
+      Assert.AreEqual(expectedRowsCount, rows.Count);
       Assert.AreEqual(expectedCellsCount, cells.Count());
     }
   }

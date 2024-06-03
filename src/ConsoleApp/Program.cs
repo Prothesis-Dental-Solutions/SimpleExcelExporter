@@ -3,16 +3,19 @@
 namespace ConsoleApp
 {
   using System;
+  using System.Collections.Generic;
   using System.Diagnostics;
+  using System.Diagnostics.CodeAnalysis;
   using System.IO;
   using SimpleExcelExporter;
   using SimpleExcelExporter.Definitions;
 
+  [SuppressMessage("Security", "CA5394:Do not use insecure randomness", Justification = "Weak pseudo-random numbers aren't used in a security-sensitive manner")]
   public static class Program
   {
     public static void Main()
     {
-      // First test : try to create empty excel file
+      // First test : try to create empty Excel file
       var n = DateTime.Now;
       var tempDi = new DirectoryInfo($"ExampleOutput-{n.Year - 2000:00}-{n.Month:00}-{n.Day:00}-{n.Hour:00}{n.Minute:00}{n.Second:00}");
       tempDi.Create();
@@ -22,6 +25,53 @@ namespace ConsoleApp
       GenerateSpreadSheetFromAnnotatedData(tempDi);
       GenerateBigSpreadsheetFromAnnotatedData(tempDi);
       GenerateBigSpreadsheetFromWorkBookDfn(tempDi);
+      GenerateSpreadsheetFromGroup(tempDi);
+    }
+
+    private static void GenerateSpreadsheetFromGroup(DirectoryInfo tempDi)
+    {
+      Console.WriteLine("GenerateBigSpreadsheetFromAnnotatedData");
+      using var memoryStream = new MemoryStream();
+      using var streamWriter = new StreamWriter(memoryStream);
+      Stopwatch stopwatch = new Stopwatch();
+      stopwatch.Start();
+      var group = new Group();
+      var person = new Person { Name = "0" };
+      group.Persons.Add(person);
+      Person currentPerson = person;
+      for (int i = 1; i < 2; i++)
+      {
+        var child = new Person { Name = $"{i}_0" };
+        currentPerson.Children.Add(child);
+
+        for (int j = 1; j < 16383; j++)
+        {
+          child = new Person { Name = $"{i}_{j}" };
+          currentPerson.Children.Add(child);
+        }
+
+        currentPerson = child;
+      }
+
+      stopwatch.Stop();
+      Console.WriteLine($"Done in {stopwatch.Elapsed.Seconds} seconds !");
+
+      Console.WriteLine("Instantiating the SpreadsheetWriter...");
+      stopwatch.Reset();
+      stopwatch.Start();
+      SpreadsheetWriter spreadsheetWriter = new SpreadsheetWriter(streamWriter.BaseStream, group);
+      stopwatch.Stop();
+      Console.WriteLine($"Done in {stopwatch.Elapsed.Seconds} seconds !");
+
+      Console.WriteLine("Writing the Excel file...");
+      stopwatch.Reset();
+      stopwatch.Start();
+      spreadsheetWriter.Write();
+      stopwatch.Stop();
+      Console.WriteLine($"Done in {stopwatch.Elapsed.Seconds} seconds !");
+
+      using FileStream file = new FileStream(Path.Combine(tempDi.FullName, "TestWithData5.xlsx"), FileMode.Create, FileAccess.Write);
+      memoryStream.WriteTo(file);
     }
 
     private static void GenerateBigSpreadsheetFromAnnotatedData(DirectoryInfo tempDi)
@@ -31,22 +81,31 @@ namespace ConsoleApp
       using var streamWriter = new StreamWriter(memoryStream);
       var team = new Team();
       Random rnd = new Random();
-      RandomDateTime randomDate = new RandomDateTime();
+      WeakPseudoRandomDateTime weakPseudoRandomDate = new WeakPseudoRandomDateTime();
       Console.WriteLine("Generating the players...");
       Stopwatch stopwatch = new Stopwatch();
       stopwatch.Start();
 
       var nullPlayer = new Player
       {
+        HeaderName0 = "klqsfjslfj",
+        HeaderName1 = "qslkfjlm",
         PlayerCode = "Code0",
         PlayerName = null,
         PracticeTime = null,
         Size = null,
         DateOfBirth = null,
+        GamePlayed = 0,
         IsActiveFlag = null,
         NumberOfVictory = null,
         FieldGoalPercentage = null,
         Salary = null,
+        MaleChildren = null,
+        FemaleChildren = new List<Child>
+           {
+             new () { FirstName = "FirstName1", Age = 1 },
+             new () { FirstName = "FirstName2", Age = 2 },
+           },
       };
       team.Players.Add(nullPlayer);
 
@@ -58,12 +117,27 @@ namespace ConsoleApp
           PlayerName = $"Player{i}",
           PracticeTime = new TimeSpan(rnd.Next(0, 23), rnd.Next(0, 59), 0),
           Size = rnd.Next(18, 100),
-          DateOfBirth = randomDate.Next(),
+          DateOfBirth = weakPseudoRandomDate.Next(),
           IsActiveFlag = Convert.ToBoolean(rnd.Next(0, 100) % 2),
           NumberOfVictory = rnd.Next(0, 100),
           FieldGoalPercentage = Convert.ToDouble(rnd.Next(0, 100)) / 100,
           Salary = Convert.ToDecimal(rnd.Next(2000, 1000000) + 0.12654984m),
+          GamePlayed = i,
+          MaleChildren = new List<Child>
+          {
+            new () { FirstName = "NephewFirstName1", Age = 1 },
+          },
+          FemaleChildren = new List<Child>
+           {
+             new () { FirstName = "FirstName1", Age = 1 },
+           },
         };
+
+        if (i % 2 == 0)
+        {
+          player.FemaleChildren.Add(new Child { FirstName = "FirstName2", Age = 2 });
+        }
+
         team.Players.Add(player);
       }
 
@@ -97,7 +171,7 @@ namespace ConsoleApp
       var worksheetDfn = new WorksheetDfn("Team");
       workbookDfn.Worksheets.Add(worksheetDfn);
       Random rnd = new Random();
-      RandomDateTime randomDate = new RandomDateTime();
+      WeakPseudoRandomDateTime weakPseudoRandomDate = new WeakPseudoRandomDateTime();
       Console.WriteLine("Generating the players...");
       Stopwatch stopwatch = new Stopwatch();
       stopwatch.Start();
@@ -110,7 +184,7 @@ namespace ConsoleApp
             new CellDfn($"Code{i}"),
             new CellDfn($"Player{i}"),
             new CellDfn(rnd.Next(18, 100), cellDataType: CellDataType.Number),
-            new CellDfn(randomDate.Next(), cellDataType: CellDataType.Date),
+            new CellDfn(weakPseudoRandomDate.Next(), cellDataType: CellDataType.Date),
             new CellDfn(Convert.ToBoolean(rnd.Next(0, 100) % 2), cellDataType: CellDataType.Boolean),
             new CellDfn(rnd.Next(0, 100), cellDataType: CellDataType.Number),
             new CellDfn(Convert.ToDouble(rnd.Next(0, 100)) / 100, cellDataType: CellDataType.Percentage),
@@ -161,6 +235,14 @@ namespace ConsoleApp
             NumberOfVictory = 45,
             FieldGoalPercentage = 0.1111,
             Salary = 2000.5m,
+            FemaleChildren = new List<Child>
+             {
+               new () { FirstName = "FirstName1", Age = 11 },
+               new () { FirstName = "FirstName2", Age = 22 },
+               new () { FirstName = "FirstName1", Age = 33 },
+             },
+            GamePlayed = 12,
+            HeaderName0 = "abc",
           },
           new Player
           {
@@ -173,6 +255,12 @@ namespace ConsoleApp
             NumberOfVictory = 52,
             FieldGoalPercentage = 0.222,
             Salary = 2141.5452m,
+            FemaleChildren = new List<Child>
+             {
+               new () { FirstName = "FirstName1", Age = 11 },
+             },
+            GamePlayed = 10,
+            HeaderName0 = "abc",
           },
           new Player
           {
@@ -185,6 +273,8 @@ namespace ConsoleApp
             NumberOfVictory = 80,
             FieldGoalPercentage = 0.33,
             Salary = 2111.5452m,
+            GamePlayed = 8,
+            HeaderName0 = "abc",
           },
           new Player
           {
@@ -197,6 +287,8 @@ namespace ConsoleApp
             NumberOfVictory = 35,
             FieldGoalPercentage = 0.4,
             Salary = 2845.719m,
+            GamePlayed = 6,
+            HeaderName0 = "abc",
           },
         },
       };

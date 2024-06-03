@@ -1,4 +1,4 @@
-﻿namespace SimpleExcelExporter.Tests.Preparators.Definitions
+namespace SimpleExcelExporter.Tests.Preparators.Definitions
 {
   using System;
   using SimpleExcelExporter.Definitions;
@@ -8,7 +8,7 @@
   /// </summary>
   public static class WorkbookDfnPreparator
   {
-    public static WorkbookDfn First() => new WorkbookDfn();
+    public static WorkbookDfn First() => new();
 
     public static WorkbookDfn FirstFirstWithCollections()
     {
@@ -42,6 +42,16 @@
       row2.Cells.Add(new CellDfn(0.2222, cellDataType: CellDataType.Percentage));
       row2.Cells.Add(new CellDfn(new TimeSpan(9, 2, 0), cellDataType: CellDataType.Time));
       worksheet1Dfn.Rows.Add(row2);
+      var row3 = new RowDfn();
+      row3.Cells.Add(new CellDfn("Bob", cellDataType: CellDataType.String));
+      row3.Cells.Add(new CellDfn(42, cellDataType: CellDataType.Number));
+      row3.Cells.Add(new CellDfn(78.00M, cellDataType: CellDataType.Number));
+      row3.Cells.Add(new CellDfn("01080", cellDataType: CellDataType.String));
+      row3.Cells.Add(new CellDfn(DateTime.Now, cellDataType: CellDataType.Date));
+      row3.Cells.Add(new CellDfn(0.2222, cellDataType: CellDataType.Percentage));
+      row3.Cells.Add(new CellDfn(string.Empty, cellDataType: CellDataType.String));
+      row3.Cells.Add(new CellDfn(new TimeSpan(9, 2, 0), cellDataType: CellDataType.Time));
+      worksheet1Dfn.Rows.Add(row3);
 
       return workbookDfn;
     }

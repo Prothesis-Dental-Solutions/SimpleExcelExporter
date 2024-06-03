@@ -19,10 +19,16 @@ EndProject
 Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "SimpleExcelExporter", "src\SimpleExcelExporter\SimpleExcelExporter.csproj", "{CBD5D1C4-D179-471B-B115-A38E9179244A}"
 EndProject
 Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "test", "test", "{71A48FDA-718F-4AB3-85CC-A955DA2E75B5}"
+	ProjectSection(SolutionItems) = preProject
+		test\.editorconfig = test\.editorconfig
+	EndProjectSection
 EndProject
 Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "SimpleExcelExporter.Tests", "test\SimpleExcelExporterTests\SimpleExcelExporter.Tests.csproj", "{8C3C7A91-7C6B-4B3D-AFF8-38AE18BD94B6}"
 EndProject
 Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "src", "src", "{A0727DB8-6D41-4804-98C3-7F0FD13A93C2}"
+	ProjectSection(SolutionItems) = preProject
+		src\.editorconfig = src\.editorconfig
+	EndProjectSection
 EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution

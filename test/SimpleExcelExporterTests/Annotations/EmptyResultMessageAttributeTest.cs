@@ -9,7 +9,7 @@
   public class EmptyResultMessageAttributeTest
   {
     [Test]
-    public void Test()
+    public void ConstructorTest()
     {
       // Prepare
       Type resourceType = typeof(MessageRes);

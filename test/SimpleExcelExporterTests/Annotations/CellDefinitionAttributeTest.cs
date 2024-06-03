@@ -8,7 +8,7 @@
   public class CellDefinitionAttributeTest
   {
     [Test]
-    public void Test()
+    public void ConstructorTest()
     {
       // Prepare
       var cellDefinitionAttribute = new CellDefinitionAttribute(CellDataType.Boolean);
