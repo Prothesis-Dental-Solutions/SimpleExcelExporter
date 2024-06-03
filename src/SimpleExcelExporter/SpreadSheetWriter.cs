@@ -1,4 +1,4 @@
-﻿namespace SimpleExcelExporter
+namespace SimpleExcelExporter
 {
   using System;
   using System.Collections.Generic;
@@ -125,17 +125,17 @@
       var sheetView = new SheetView { TabSelected = true, WorkbookViewId = 0U };
       var selection = new Selection { ActiveCell = "A1", SequenceOfReferences = new ListValue<StringValue> { InnerText = "A1" } };
 
-      sheetView.AppendChild(selection);
+      _ = sheetView.AppendChild(selection);
 
-      sheetViews.AppendChild(sheetView);
+      _ = sheetViews.AppendChild(sheetView);
       var sheetFormatProperties = new SheetFormatProperties { DefaultRowHeight = 15D, DefaultColumnWidth = 15D };
 
       var pageMargins = new PageMargins { Left = 0.7D, Right = 0.7D, Top = 0.75D, Bottom = 0.75D, Header = 0.3D, Footer = 0.3D };
-      worksheet.AppendChild(sheetDimension);
-      worksheet.AppendChild(sheetViews);
-      worksheet.AppendChild(sheetFormatProperties);
-      worksheet.AppendChild(sheetData);
-      worksheet.AppendChild(pageMargins);
+      _ = worksheet.AppendChild(sheetDimension);
+      _ = worksheet.AppendChild(sheetViews);
+      _ = worksheet.AppendChild(sheetFormatProperties);
+      _ = worksheet.AppendChild(sheetData);
+      _ = worksheet.AppendChild(pageMargins);
       worksheetPart.Worksheet = worksheet;
     }
 
@@ -225,12 +225,9 @@
               }
             }
           }
-          else
+          else if (ignoreFromSpreadSheetAttribute?.IgnoreFlag != true)
           {
-            if (ignoreFromSpreadSheetAttribute?.IgnoreFlag != true)
-            {
-              CreateCellToRow(currentPlayer, rowDfn, cellDefinitionAttribute, playerTypePropertyInfo, index);
-            }
+            CreateCellToRow(currentPlayer, rowDfn, cellDefinitionAttribute, playerTypePropertyInfo, index);
           }
         }
       }
@@ -305,33 +302,29 @@
               }
             }
           }
-          else
+          else if (ignoreFromSpreadSheetAttribute?.IgnoreFlag != true)
           {
-            if (ignoreFromSpreadSheetAttribute?.IgnoreFlag != true)
+            string key = $"{playerTypePropertyInfo.Module.MetadataToken}_{playerTypePropertyInfo.MetadataToken}_{string.Join("_", index)}";
+            if (_headers.Add(key))
             {
-              string key = $"{playerTypePropertyInfo.Module.MetadataToken}_{playerTypePropertyInfo.MetadataToken}_{string.Join("_", index)}";
-              if (_headers.Add(key))
+              HeaderAttribute? headerAttribute = GetAttributeFrom<HeaderAttribute>(playerTypePropertyInfo);
+              if (headerAttribute != null)
               {
-                HeaderAttribute? headerAttribute = GetAttributeFrom<HeaderAttribute>(playerTypePropertyInfo);
-                if (headerAttribute != null)
+                string text = headerAttribute.Text;
+                if (headerAttribute.TextToAddToHeader != null)
                 {
-                  // TODO - et si le header n'est pas défini ?
-                  string text = headerAttribute.Text;
-                  if (headerAttribute.TextToAddToHeader != null)
+                  PropertyInfo? textToAddToHeaderPropertyInfo = currentPlayerType.GetProperty(headerAttribute.TextToAddToHeader);
+                  if (textToAddToHeaderPropertyInfo?.GetValue(currentPlayer, null) != null)
                   {
-                    PropertyInfo? textToAddToHeaderPropertyInfo = currentPlayerType.GetProperty(headerAttribute.TextToAddToHeader);
-                    if (textToAddToHeaderPropertyInfo != null && textToAddToHeaderPropertyInfo.GetValue(currentPlayer, null) != null)
-                    {
-                      text = string.Format(text, textToAddToHeaderPropertyInfo.GetValue(currentPlayer, null));
-                    }
+                    text = string.Format(text, textToAddToHeaderPropertyInfo.GetValue(currentPlayer, null));
                   }
+                }
 
-                  AddHeaderCellToWorkSheet(worksheetDfn, text, index);
-                }
-                else
-                {
-                  AddHeaderCellToWorkSheet(worksheetDfn, string.Empty, index);
-                }
+                AddHeaderCellToWorkSheet(worksheetDfn, text, index);
+              }
+              else
+              {
+                AddHeaderCellToWorkSheet(worksheetDfn, string.Empty, index);
               }
             }
           }
@@ -438,16 +431,13 @@
       foreach (var playerTypePropertyInfo in playerTypePropertyInfos)
       {
         MultiColumnAttribute? multiColumnAttribute = GetAttributeFrom<MultiColumnAttribute>(playerTypePropertyInfo);
-        if (multiColumnAttribute != null)
+        if (multiColumnAttribute != null && playerTypePropertyInfo.GetValue(player) is IEnumerable<object> childPlayersEnumerable)
         {
-          if (playerTypePropertyInfo.GetValue(player) is IEnumerable<object> childPlayersEnumerable)
+          object[] childPlayers = childPlayersEnumerable.ToArray();
+          int numberOfElement = childPlayers.Length;
+          if (numberOfElement > multiColumnAttribute.MaxNumberOfElement)
           {
-            object[] childPlayers = childPlayersEnumerable.ToArray();
-            int numberOfElement = childPlayers.Length;
-            if (numberOfElement > multiColumnAttribute.MaxNumberOfElement)
-            {
-              multiColumnAttribute.MaxNumberOfElement = numberOfElement;
-            }
+            multiColumnAttribute.MaxNumberOfElement = numberOfElement;
           }
         }
       }
@@ -467,60 +457,57 @@
         cell.CellValue = new CellValue(string.Empty);
         cell.DataType = new EnumValue<CellValues>(CellValues.String);
       }
+      else if (cellDfn.Value is DateTime dateTimeValue)
+      {
+        cell.CellValue = new CellValue(dateTimeValue);
+        cell.DataType = new EnumValue<CellValues>(CellValues.Date);
+      }
+      else if (cellDfn.Value is DateTimeOffset dateTimeOffsetValue)
+      {
+        cell.CellValue = new CellValue(dateTimeOffsetValue);
+        cell.DataType = new EnumValue<CellValues>(CellValues.Date);
+      }
+      else if (cellDfn.Value is bool boolValue)
+      {
+        int intValue = boolValue ? 0 : 1;
+        cell.CellValue = new CellValue(intValue);
+        cell.DataType = new EnumValue<CellValues>(CellValues.Boolean);
+      }
+      else if (cellDfn.Value is byte byteValue)
+      {
+        cell.CellValue = new CellValue(byteValue);
+        cell.DataType = new EnumValue<CellValues>(CellValues.Number);
+      }
+      else if (cellDfn.Value is decimal decimalValue)
+      {
+        cell.CellValue = new CellValue(decimalValue);
+        cell.DataType = new EnumValue<CellValues>(CellValues.Number);
+      }
+      else if (cellDfn.Value is double doubleValue)
+      {
+        cell.CellValue = new CellValue(doubleValue);
+        cell.DataType = new EnumValue<CellValues>(CellValues.Number);
+      }
+      else if (cellDfn.Value is int intValue)
+      {
+        cell.CellValue = new CellValue(intValue);
+        cell.DataType = new EnumValue<CellValues>(CellValues.Number);
+      }
+      else if (cellDfn.Value is string stringValue)
+      {
+        stringValue = XmlStringHelper.Sanitize(stringValue);
+        cell.CellValue = new CellValue(stringValue);
+        cell.DataType = new EnumValue<CellValues>(CellValues.String);
+      }
+      else if (cellDfn.Value is TimeSpan timeSpanValue)
+      {
+        // Excel saves time in seconds divided by maximum seconds of a day
+        double cellValue = timeSpanValue.TotalSeconds / 86400; // 86400 = 24 * 60 *60
+        cell.CellValue = new CellValue(cellValue.ToString(CultureInfo.InvariantCulture));
+      }
       else
       {
-        if (cellDfn.Value is DateTime dateTimeValue)
-        {
-          cell.CellValue = new CellValue(dateTimeValue);
-          cell.DataType = new EnumValue<CellValues>(CellValues.Date);
-        }
-        else if (cellDfn.Value is DateTimeOffset dateTimeOffsetValue)
-        {
-          cell.CellValue = new CellValue(dateTimeOffsetValue);
-          cell.DataType = new EnumValue<CellValues>(CellValues.Date);
-        }
-        else if (cellDfn.Value is bool boolValue)
-        {
-          int intValue = boolValue ? 0 : 1;
-          cell.CellValue = new CellValue(intValue);
-          cell.DataType = new EnumValue<CellValues>(CellValues.Boolean);
-        }
-        else if (cellDfn.Value is byte byteValue)
-        {
-          cell.CellValue = new CellValue(byteValue);
-          cell.DataType = new EnumValue<CellValues>(CellValues.Number);
-        }
-        else if (cellDfn.Value is decimal decimalValue)
-        {
-          cell.CellValue = new CellValue(decimalValue);
-          cell.DataType = new EnumValue<CellValues>(CellValues.Number);
-        }
-        else if (cellDfn.Value is double doubleValue)
-        {
-          cell.CellValue = new CellValue(doubleValue);
-          cell.DataType = new EnumValue<CellValues>(CellValues.Number);
-        }
-        else if (cellDfn.Value is int intValue)
-        {
-          cell.CellValue = new CellValue(intValue);
-          cell.DataType = new EnumValue<CellValues>(CellValues.Number);
-        }
-        else if (cellDfn.Value is string stringValue)
-        {
-          stringValue = XmlStringHelper.Sanitize(stringValue);
-          cell.CellValue = new CellValue(stringValue);
-          cell.DataType = new EnumValue<CellValues>(CellValues.String);
-        }
-        else if (cellDfn.Value is TimeSpan timeSpanValue)
-        {
-          // Excel saves time in seconds divided by maximum seconds of a day
-          double cellValue = timeSpanValue.TotalSeconds / 86400; // 86400 = 24 * 60 *60
-          cell.CellValue = new CellValue(cellValue.ToString(CultureInfo.InvariantCulture));
-        }
-        else
-        {
-          throw new NotSupportedException($"Type {cellDfn.Value.GetType()} is not supported as a Cell value");
-        }
+        throw new NotSupportedException($"Type {cellDfn.Value.GetType()} is not supported as a Cell value");
       }
 
       return cell;
@@ -531,7 +518,7 @@
       var row = new Row();
       foreach (var cellDfn in columnHeadings)
       {
-        row.AppendChild(CreateCell(cellDfn));
+        _ = row.AppendChild(CreateCell(cellDfn));
       }
 
       return row;
@@ -580,7 +567,7 @@
 
       var index = _stylesheet.CellFormats!.Count!.Value;
       _stylesheet.CellFormats!.Count!.Value++;
-      _stylesheet.CellFormats.AppendChild(cellFormat);
+      _ = _stylesheet.CellFormats.AppendChild(cellFormat);
       Table.Add(styleHashCode, index);
 
       return index;
@@ -592,7 +579,7 @@
       var workbook = new Workbook();
       workbookPart.Workbook = workbook;
       var sheets = new Sheets();
-      workbook.AppendChild(sheets);
+      _ = workbook.AppendChild(sheets);
 
       var workbookStylesPart1 = workbookPart.AddNewPart<WorkbookStylesPart>("rId3");
       GenerateWorkbookStylesPartContent(workbookStylesPart1);
@@ -603,7 +590,7 @@
       {
         var worksheetPart = workbookPart.AddNewPart<WorksheetPart>();
         var sheet = new Sheet { Name = worksheet.Name, SheetId = count, Id = workbookPart.GetIdOfPart(worksheetPart) };
-        sheets.AppendChild(sheet);
+        _ = sheets.AppendChild(sheet);
         var sheetData = GenerateSheetDataForDetails(worksheet);
         GenerateWorksheetPartContent(worksheetPart, sheetData);
         count++;
@@ -616,7 +603,7 @@
 
       foreach (var cellDfn in rowDfn.Cells)
       {
-        row.AppendChild(CreateCell(cellDfn));
+        _ = row.AppendChild(CreateCell(cellDfn));
       }
 
       return row;
@@ -627,13 +614,13 @@
       var sheetData1 = new SheetData();
       if (worksheet.ColumnHeadings.Cells.Count > 0)
       {
-        sheetData1.AppendChild(CreateHeaderRowForExcel(worksheet.ColumnHeadings.Cells));
+        _ = sheetData1.AppendChild(CreateHeaderRowForExcel(worksheet.ColumnHeadings.Cells));
       }
 
       foreach (var row in worksheet.Rows)
       {
         var partsRows = GenerateRowForChildPartDetail(row);
-        sheetData1.AppendChild(partsRows);
+        _ = sheetData1.AppendChild(partsRows);
       }
 
       return sheetData1;
@@ -652,12 +639,12 @@
         FontScheme = new FontScheme { Val = FontSchemeValues.Minor },
       };
 
-      fonts.AppendChild(font);
+      _ = fonts.AppendChild(font);
 
       // Default Fill
       var fills = new Fills { Count = 1U };
       var fill = new Fill { PatternFill = new PatternFill { PatternType = PatternValues.None } };
-      fills.AppendChild(fill);
+      _ = fills.AppendChild(fill);
 
       // Default Border
       var borders = new Borders { Count = 1U };
@@ -669,21 +656,21 @@
         BottomBorder = new BottomBorder(),
         DiagonalBorder = new DiagonalBorder(),
       };
-      borders.AppendChild(border);
+      _ = borders.AppendChild(border);
 
       // CellStyleFormats
       var cellStyleFormats = new CellStyleFormats { Count = 1U };
       var cellFormat = new CellFormat { NumberFormatId = 0U, FontId = 0U, FillId = 0U, BorderId = 0U };
-      cellStyleFormats.AppendChild(cellFormat);
+      _ = cellStyleFormats.AppendChild(cellFormat);
 
       // CellFormats
       var cellFormats = new CellFormats { Count = 0U };
 
-      _stylesheet.AppendChild(fonts);
-      _stylesheet.AppendChild(fills);
-      _stylesheet.AppendChild(borders);
-      _stylesheet.AppendChild(cellStyleFormats);
-      _stylesheet.AppendChild(cellFormats);
+      _ = _stylesheet.AppendChild(fonts);
+      _ = _stylesheet.AppendChild(fills);
+      _ = _stylesheet.AppendChild(borders);
+      _ = _stylesheet.AppendChild(cellStyleFormats);
+      _ = _stylesheet.AppendChild(cellFormats);
 
       workbookStylesPart.Stylesheet = _stylesheet;
     }
@@ -691,7 +678,7 @@
     private T? GetAttributeFrom<T>(PropertyInfo propertyInfo)
       where T : Attribute
     {
-      string key = $"{propertyInfo.Module.MetadataToken}_{propertyInfo.MetadataToken}_{typeof(T).Name}"; // TODO Yanal - voir si on peut retirer _{typeof(T).Name}
+      string key = $"{propertyInfo.Module.MetadataToken}_{propertyInfo.MetadataToken}_{typeof(T).Name}";
       if (_cachedAttributes.TryGetValue(key, out var cachedAttribute))
       {
         return (T?)cachedAttribute;

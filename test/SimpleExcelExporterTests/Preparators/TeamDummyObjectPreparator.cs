@@ -1,4 +1,4 @@
-﻿namespace SimpleExcelExporter.Tests.Preparators
+namespace SimpleExcelExporter.Tests.Preparators
 {
   using SimpleExcelExporter.Tests.Models;
 
@@ -14,6 +14,8 @@
           PlayerDummyObjectPreparator.Second(),
           PlayerDummyObjectPreparator.Third(),
           PlayerDummyObjectPreparator.Fourth(),
+          PlayerDummyObjectPreparator.Fifth(),
+          PlayerDummyObjectPreparator.Sixth(),
         },
     };
   }

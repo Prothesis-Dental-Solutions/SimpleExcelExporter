@@ -1,4 +1,4 @@
-﻿namespace SimpleExcelExporter.Tests
+namespace SimpleExcelExporter.Tests
 {
   using System.Collections.Generic;
   using System.IO;
@@ -36,7 +36,7 @@
 
       // Check
       Assert.AreNotEqual(memoryStream.Length, 0);
-      Validate(memoryStream, 1, 3, 7);
+      Validate(memoryStream, 1, 4, 7);
 
       // Prepare an object
       var team = TeamDummyObjectPreparator.First();
@@ -60,8 +60,8 @@
 
       // Check
       Assert.AreNotEqual(memoryStream.Length, 0);
-      // expected 1 sheet, 5 rows (1 header + 4 players + 2 children of player), 15 cells
-      Validate(memoryStream, 1, 5, 15);
+      // expected 1 sheet, 6 rows (1 header + 5 players + 2 children of player), 20 cells
+      Validate(memoryStream, 1, 7, 20);
 
       // Prepare an empty object - two properties with the same index column
       var teamWithSameColumnIndex = TeamWithSameColumnIndexDummyObjectPreparator.First();
@@ -101,7 +101,7 @@
     public void SpreadsheetExportSheetNameLengthTest()
     {
       // Prepare a non-empty workbook
-      var tooLongSheetName = "Name with something bigger than 31 characters.";
+      const string tooLongSheetName = "Name with something bigger than 31 characters.";
       var workBookDfn = WorkbookDfnPreparator.First();
       workBookDfn.Worksheets.Add(new WorksheetDfn(tooLongSheetName));
       using var memoryStream = new MemoryStream();
@@ -139,7 +139,7 @@
       var worksheetsPart = workbookPart!.WorksheetParts.First();
       var sheetData = worksheetsPart.Worksheet.GetFirstChild<SheetData>();
       var rows = sheetData!.Descendants<Row>().ToList();
-      var cells = rows.First().Descendants<Cell>();
+      var cells = rows[0].Descendants<Cell>();
 
       Assert.IsNotNull(workbookPart.Workbook);
       Assert.IsNotNull(workbookPart.Workbook.Sheets);

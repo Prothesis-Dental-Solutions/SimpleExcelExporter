@@ -61,7 +61,7 @@ namespace SimpleExcelExporter.Tests.Models {
         }
         
         /// <summary>
-        ///   Looks up a localized string similar to Child Age.
+        ///   Looks up a localized string similar to Child Age : {0}.
         /// </summary>
         public static string ChildAgeColumnName {
             get {
@@ -75,6 +75,15 @@ namespace SimpleExcelExporter.Tests.Models {
         public static string ChildFirstNameColumnName {
             get {
                 return ResourceManager.GetString("ChildFirstNameColumnName", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   Looks up a localized string similar to Gender.
+        /// </summary>
+        public static string ChildGender {
+            get {
+                return ResourceManager.GetString("ChildGender", resourceCulture);
             }
         }
     }

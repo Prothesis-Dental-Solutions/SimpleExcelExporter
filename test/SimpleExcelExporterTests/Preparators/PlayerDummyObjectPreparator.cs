@@ -1,4 +1,4 @@
-﻿namespace SimpleExcelExporter.Tests.Preparators
+namespace SimpleExcelExporter.Tests.Preparators
 {
   using System;
   using System.Collections.Generic;
@@ -22,6 +22,7 @@
       Children = new List<ChildOfPlayerDummyObject> {
         ChildOfPlayerDummyObjectPreparator.First(),
         ChildOfPlayerDummyObjectPreparator.Second(),
+        ChildOfPlayerDummyObjectPreparator.Third(),
       }
     };
 
@@ -42,7 +43,6 @@
         ChildOfPlayerDummyObjectPreparator.Third(),
         ChildOfPlayerDummyObjectPreparator.Fourth(),
       }
-
     };
 
     public static PlayerDummyObject Third() => new()
@@ -62,7 +62,6 @@
         ChildOfPlayerDummyObjectPreparator.First(),
         ChildOfPlayerDummyObjectPreparator.Fourth(),
       }
-
     };
 
     public static PlayerDummyObject Fourth() => new()
@@ -82,7 +81,13 @@
         ChildOfPlayerDummyObjectPreparator.Second(),
         ChildOfPlayerDummyObjectPreparator.Third(),
       }
-
     };
+
+    public static PlayerDummyObject Fifth() => new()
+    {
+      Children = null,
+    };
+
+    public static PlayerDummyObject Sixth() => new();
   }
 }
