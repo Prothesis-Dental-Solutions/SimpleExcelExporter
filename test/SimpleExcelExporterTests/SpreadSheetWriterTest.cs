@@ -61,7 +61,7 @@ namespace SimpleExcelExporter.Tests
       // Check
       Assert.AreNotEqual(memoryStream.Length, 0);
       // expected 1 sheet, 6 rows (1 header + 5 players + 2 children of player), 20 cells
-      Validate(memoryStream, 1, 7, 20);
+      Validate(memoryStream, 1, 8, 20);
 
       // Prepare an empty object - two properties with the same index column
       var teamWithSameColumnIndex = TeamWithSameColumnIndexDummyObjectPreparator.First();

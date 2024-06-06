@@ -179,23 +179,25 @@ namespace SimpleExcelExporter
           List<int> index = ManageIndex(currentIteration, currentParentIndex, indexAttribute);
           if (multiColumnAttribute != null)
           {
-            if (currentPlayer != null && playerTypePropertyInfo.GetValue(currentPlayer) is IEnumerable<object> childPlayersEnumerable)
+            if (currentPlayer != null && playerTypePropertyInfo.GetValue(currentPlayer) is IEnumerable<object?> childPlayers)
             {
-              object[] childPlayers = childPlayersEnumerable.ToArray();
               int maxNumberOfElement = multiColumnAttribute.MaxNumberOfElement;
               int childIteration = 1;
               Type? childPlayerType = null;
               PropertyInfo[]? childPlayerTypePropertyInfos = null;
               foreach (object? childPlayer in childPlayers)
               {
-                childPlayerType = childPlayer.GetType();
-                childPlayerTypePropertyInfos = childPlayerType.GetProperties();
-                objectQueue.Enqueue((childPlayer, childPlayerTypePropertyInfos, childIteration, index)); // Enqueue child object for later processing
-                childIteration++;
+                if (childPlayer != null)
+                {
+                  childPlayerType = childPlayer.GetType();
+                  childPlayerTypePropertyInfos = childPlayerType.GetProperties();
+                  objectQueue.Enqueue((childPlayer, childPlayerTypePropertyInfos, childIteration, index)); // Enqueue child object for later processing
+                  childIteration++;
+                }
               }
 
               // Add empty cells if needed
-              int numberOfEmptyCellToAdd = maxNumberOfElement - childPlayers.Length;
+              int numberOfEmptyCellToAdd = maxNumberOfElement - childIteration + 1;
               if (childPlayerType != null && childPlayerTypePropertyInfos != null && numberOfEmptyCellToAdd > 0)
               {
                 for (int i = 0; i < numberOfEmptyCellToAdd; i++)
@@ -256,23 +258,25 @@ namespace SimpleExcelExporter
           List<int> index = ManageIndex(currentIteration, currentParentIndex, indexAttribute);
           if (multiColumnAttribute != null)
           {
-            if (currentPlayer != null && playerTypePropertyInfo.GetValue(currentPlayer) is IEnumerable<object> childPlayersEnumerable)
+            if (currentPlayer != null && playerTypePropertyInfo.GetValue(currentPlayer) is IEnumerable<object?> childPlayers)
             {
-              object[] childPlayers = childPlayersEnumerable.ToArray();
               int maxNumberOfElement = multiColumnAttribute.MaxNumberOfElement;
               int childIteration = 1;
               Type? childPlayerType = null;
               PropertyInfo[]? childPlayerTypePropertyInfos = null;
               foreach (object? childPlayer in childPlayers)
               {
-                childPlayerType = childPlayer.GetType();
-                childPlayerTypePropertyInfos = childPlayerType.GetProperties();
-                objectQueue.Enqueue((childPlayer, childPlayerType, childPlayerTypePropertyInfos, childIteration, index)); // Enqueue child object for later processing
-                childIteration++;
+                if (childPlayer != null)
+                {
+                  childPlayerType = childPlayer.GetType();
+                  childPlayerTypePropertyInfos = childPlayerType.GetProperties();
+                  objectQueue.Enqueue((childPlayer, childPlayerType, childPlayerTypePropertyInfos, childIteration, index)); // Enqueue child object for later processing
+                  childIteration++;
+                }
               }
 
               // Add empty cells if needed
-              int numberOfEmptyCellToAdd = maxNumberOfElement - childPlayers.Length;
+              int numberOfEmptyCellToAdd = maxNumberOfElement - childIteration + 1;
               if (childPlayerType != null && childPlayerTypePropertyInfos != null && numberOfEmptyCellToAdd > 0)
               {
                 for (int i = 0; i < numberOfEmptyCellToAdd; i++)
@@ -302,7 +306,7 @@ namespace SimpleExcelExporter
               }
             }
           }
-          else if (ignoreFromSpreadSheetAttribute?.IgnoreFlag != true)
+          else if (currentPlayer != null && ignoreFromSpreadSheetAttribute?.IgnoreFlag != true)
           {
             string key = $"{playerTypePropertyInfo.Module.MetadataToken}_{playerTypePropertyInfo.MetadataToken}_{string.Join("_", index)}";
             if (_headers.Add(key))
@@ -377,9 +381,7 @@ namespace SimpleExcelExporter
             {
               if (player != null)
               {
-                var playerType = player.GetType();
-                PropertyInfo[] playerTypePropertyInfos = playerType.GetProperties();
-                CalculateMaxNumberOfElement(player, playerTypePropertyInfos);
+                CalculateMaxNumberOfElement(player);
               }
             }
 
@@ -426,18 +428,28 @@ namespace SimpleExcelExporter
       return workbookDfn;
     }
 
-    private void CalculateMaxNumberOfElement(object? player, PropertyInfo[] playerTypePropertyInfos)
+    private void CalculateMaxNumberOfElement(object player)
     {
-      foreach (var playerTypePropertyInfo in playerTypePropertyInfos)
+      var objectQueue = new Queue<object>(); // Use a queue to manage child objects
+      objectQueue.Enqueue(player);
+
+      while (objectQueue.Count > 0)
       {
-        MultiColumnAttribute? multiColumnAttribute = GetAttributeFrom<MultiColumnAttribute>(playerTypePropertyInfo);
-        if (multiColumnAttribute != null && playerTypePropertyInfo.GetValue(player) is IEnumerable<object> childPlayersEnumerable)
+        object currentPlayer = objectQueue.Dequeue();
+        var playerType = currentPlayer.GetType();
+        PropertyInfo[] playerTypePropertyInfos = playerType.GetProperties();
+        foreach (var playerTypePropertyInfo in playerTypePropertyInfos)
         {
-          object[] childPlayers = childPlayersEnumerable.ToArray();
-          int numberOfElement = childPlayers.Length;
-          if (numberOfElement > multiColumnAttribute.MaxNumberOfElement)
+          MultiColumnAttribute? multiColumnAttribute = GetAttributeFrom<MultiColumnAttribute>(playerTypePropertyInfo);
+          if (multiColumnAttribute != null && playerTypePropertyInfo.GetValue(currentPlayer) is IEnumerable<object?> childPlayers)
           {
-            multiColumnAttribute.MaxNumberOfElement = numberOfElement;
+            int numberOfElement = childPlayers.Count(x => x != null);
+            if (numberOfElement > multiColumnAttribute.MaxNumberOfElement)
+            {
+              multiColumnAttribute.MaxNumberOfElement = numberOfElement;
+            }
+
+            objectQueue.Enqueue(childPlayers);
           }
         }
       }
