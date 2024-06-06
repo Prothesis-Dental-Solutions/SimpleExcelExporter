@@ -144,4 +144,10 @@
   <data name="PracticeTimeColumnName" xml:space="preserve">
     <value>Heure d'entraînement</value>
   </data>
+  <data name="ChildFirstName" xml:space="preserve">
+    <value>Prénom enfant {0}</value>
+  </data>
+  <data name="ChildAge" xml:space="preserve">
+    <value>Age enfant</value>
+  </data>
 </root>
