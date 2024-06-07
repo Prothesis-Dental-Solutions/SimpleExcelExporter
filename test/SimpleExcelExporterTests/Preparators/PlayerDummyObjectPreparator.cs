@@ -19,11 +19,6 @@ namespace SimpleExcelExporter.Tests.Preparators
       ByteColumn = 1,
       DateTimeOffsetColumn = new DateTimeOffset(new DateTime(1974, 02, 01)),
       FieldGoalPercentage = 0.0111d,
-      Children = new List<ChildOfPlayerDummyObject> {
-        ChildOfPlayerDummyObjectPreparator.First(),
-        ChildOfPlayerDummyObjectPreparator.Second(),
-        ChildOfPlayerDummyObjectPreparator.Third(),
-      }
     };
 
     public static PlayerDummyObject Second() => new()
@@ -89,5 +84,25 @@ namespace SimpleExcelExporter.Tests.Preparators
     };
 
     public static PlayerDummyObject Sixth() => new();
+
+    public static PlayerDummyObject Seventh() => new()
+    {
+      PlayerCode = null,
+      PlayerName = "Player\bName1<a href=\"https://www.google.com\" /> &lt;b /&gt; \r\n\t",
+      PracticeTime = new TimeSpan(9, 1, 0),
+      Size = 1.93d,
+      DateOfBirth = new DateTime(1974, 02, 01),
+      IsActiveFlag = true,
+      NumberOfVictory = 45,
+      Salary = 2000.5m,
+      ByteColumn = 1,
+      DateTimeOffsetColumn = new DateTimeOffset(new DateTime(1974, 02, 01)),
+      FieldGoalPercentage = 0.0111d,
+      Children = new List<ChildOfPlayerDummyObject> {
+        ChildOfPlayerDummyObjectPreparator.First(),
+        ChildOfPlayerDummyObjectPreparator.Second(),
+        ChildOfPlayerDummyObjectPreparator.Third(),
+      }
+    };
   }
 }

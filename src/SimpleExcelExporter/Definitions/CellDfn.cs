@@ -28,14 +28,14 @@
     public CellDataType CellDataType { get; }
 
     /// <summary>
-    /// Gets or set the value of the cell
+    /// Gets or sets the value of the cell
     /// Value can be:
     /// - string
     /// - bool
     /// - DateTime
     /// - int32, int64, uint, double, float, etc.
     /// </summary>
-    public object? Value { get; }
+    public object? Value { get; set; }
 
     public IList<int> Index { get; }
 

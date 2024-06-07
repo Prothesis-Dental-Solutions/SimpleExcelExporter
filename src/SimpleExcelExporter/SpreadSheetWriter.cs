@@ -18,7 +18,9 @@ namespace SimpleExcelExporter
   {
     private readonly IDictionary<string, Attribute?> _cachedAttributes = new Dictionary<string, Attribute?>();
 
-    private readonly ISet<string> _headers = new HashSet<string>();
+    private readonly IDictionary<string, (CellDfn, bool)> _headers = new Dictionary<string, (CellDfn, bool)>();
+
+    private readonly IDictionary<string, int> _multiColumnAttribute = new Dictionary<string, int>();
 
     private readonly Stream _stream;
 
@@ -64,10 +66,11 @@ namespace SimpleExcelExporter
       CreatePartsForExcel(document);
     }
 
-    private static void AddHeaderCellToWorkSheet(WorksheetDfn worksheetDfn, string text, List<int> index)
+    private static CellDfn AddHeaderCellToWorkSheet(WorksheetDfn worksheetDfn, string text, List<int> index)
     {
       CellDfn headerCellDfn = new CellDfn(text, index: index);
       worksheetDfn.ColumnHeadings.Cells.Add(headerCellDfn);
+      return headerCellDfn;
     }
 
     private static void CreateCellToRow(
@@ -179,23 +182,22 @@ namespace SimpleExcelExporter
           List<int> index = ManageIndex(currentIteration, currentParentIndex, indexAttribute);
           if (multiColumnAttribute != null)
           {
-            if (currentPlayer != null && playerTypePropertyInfo.GetValue(currentPlayer) is IEnumerable<object> childPlayersEnumerable)
+            if (currentPlayer != null && playerTypePropertyInfo.GetValue(currentPlayer) is IEnumerable<object?> childPlayers)
             {
-              object[] childPlayers = childPlayersEnumerable.ToArray();
-              int maxNumberOfElement = multiColumnAttribute.MaxNumberOfElement;
+              string key = $"{playerTypePropertyInfo.Module.MetadataToken}_{playerTypePropertyInfo.MetadataToken}";
+              int maxNumberOfElement = _multiColumnAttribute[key];
               int childIteration = 1;
-              Type? childPlayerType = null;
+              Type childPlayerType = playerTypePropertyInfo.PropertyType.GenericTypeArguments.Single();
               PropertyInfo[]? childPlayerTypePropertyInfos = null;
               foreach (object? childPlayer in childPlayers)
               {
-                childPlayerType = childPlayer.GetType();
                 childPlayerTypePropertyInfos = childPlayerType.GetProperties();
                 objectQueue.Enqueue((childPlayer, childPlayerTypePropertyInfos, childIteration, index)); // Enqueue child object for later processing
                 childIteration++;
               }
 
               // Add empty cells if needed
-              int numberOfEmptyCellToAdd = maxNumberOfElement - childPlayers.Length;
+              int numberOfEmptyCellToAdd = maxNumberOfElement - childIteration + 1;
               if (childPlayerType != null && childPlayerTypePropertyInfos != null && numberOfEmptyCellToAdd > 0)
               {
                 for (int i = 0; i < numberOfEmptyCellToAdd; i++)
@@ -208,8 +210,8 @@ namespace SimpleExcelExporter
             else
             {
               // Add empty cells if needed
-              int maxNumberOfElement = multiColumnAttribute.MaxNumberOfElement;
-              int numberOfEmptyCellToAdd = maxNumberOfElement;
+              string key = $"{playerTypePropertyInfo.Module.MetadataToken}_{playerTypePropertyInfo.MetadataToken}";
+              int numberOfEmptyCellToAdd = _multiColumnAttribute[key];
               Type? childPlayerType = playerTypePropertyInfo.PropertyType.GenericTypeArguments.FirstOrDefault();
               if (childPlayerType != null)
               {
@@ -248,7 +250,7 @@ namespace SimpleExcelExporter
       {
         (object? currentPlayer, Type currentPlayerType, PropertyInfo[] currentPlayerTypePropertyInfos, int currentIteration, List<int>? currentParentIndex) = objectQueue.Dequeue();
 
-        foreach (var playerTypePropertyInfo in currentPlayerTypePropertyInfos)
+        foreach (PropertyInfo playerTypePropertyInfo in currentPlayerTypePropertyInfos)
         {
           IndexAttribute? indexAttribute = GetAttributeFrom<IndexAttribute>(playerTypePropertyInfo);
           IgnoreFromSpreadSheetAttribute? ignoreFromSpreadSheetAttribute = GetAttributeFrom<IgnoreFromSpreadSheetAttribute>(playerTypePropertyInfo);
@@ -256,23 +258,22 @@ namespace SimpleExcelExporter
           List<int> index = ManageIndex(currentIteration, currentParentIndex, indexAttribute);
           if (multiColumnAttribute != null)
           {
-            if (currentPlayer != null && playerTypePropertyInfo.GetValue(currentPlayer) is IEnumerable<object> childPlayersEnumerable)
+            if (currentPlayer != null && playerTypePropertyInfo.GetValue(currentPlayer) is IEnumerable<object?> childPlayers)
             {
-              object[] childPlayers = childPlayersEnumerable.ToArray();
-              int maxNumberOfElement = multiColumnAttribute.MaxNumberOfElement;
+              string key = $"{playerTypePropertyInfo.Module.MetadataToken}_{playerTypePropertyInfo.MetadataToken}";
+              int maxNumberOfElement = _multiColumnAttribute[key];
               int childIteration = 1;
-              Type? childPlayerType = null;
+              Type childPlayerType = playerTypePropertyInfo.PropertyType.GenericTypeArguments.Single();
               PropertyInfo[]? childPlayerTypePropertyInfos = null;
               foreach (object? childPlayer in childPlayers)
               {
-                childPlayerType = childPlayer.GetType();
-                childPlayerTypePropertyInfos = childPlayerType.GetProperties();
-                objectQueue.Enqueue((childPlayer, childPlayerType, childPlayerTypePropertyInfos, childIteration, index)); // Enqueue child object for later processing
-                childIteration++;
+                  childPlayerTypePropertyInfos = childPlayerType.GetProperties();
+                  objectQueue.Enqueue((childPlayer, childPlayerType, childPlayerTypePropertyInfos, childIteration, index)); // Enqueue child object for later processing
+                  childIteration++;
               }
 
               // Add empty cells if needed
-              int numberOfEmptyCellToAdd = maxNumberOfElement - childPlayers.Length;
+              int numberOfEmptyCellToAdd = maxNumberOfElement - childIteration + 1;
               if (childPlayerType != null && childPlayerTypePropertyInfos != null && numberOfEmptyCellToAdd > 0)
               {
                 for (int i = 0; i < numberOfEmptyCellToAdd; i++)
@@ -285,8 +286,8 @@ namespace SimpleExcelExporter
             else
             {
               // Add empty cells if needed
-              int maxNumberOfElement = multiColumnAttribute.MaxNumberOfElement;
-              int numberOfEmptyCellToAdd = maxNumberOfElement;
+              string key = $"{playerTypePropertyInfo.Module.MetadataToken}_{playerTypePropertyInfo.MetadataToken}";
+              int numberOfEmptyCellToAdd = _multiColumnAttribute[key];
               Type? childPlayerType = playerTypePropertyInfo.PropertyType.GenericTypeArguments.FirstOrDefault();
               if (childPlayerType != null)
               {
@@ -304,32 +305,51 @@ namespace SimpleExcelExporter
           }
           else if (ignoreFromSpreadSheetAttribute?.IgnoreFlag != true)
           {
-            string key = $"{playerTypePropertyInfo.Module.MetadataToken}_{playerTypePropertyInfo.MetadataToken}_{string.Join("_", index)}";
-            if (_headers.Add(key))
-            {
-              HeaderAttribute? headerAttribute = GetAttributeFrom<HeaderAttribute>(playerTypePropertyInfo);
-              if (headerAttribute != null)
-              {
-                string text = headerAttribute.Text;
-                if (headerAttribute.TextToAddToHeader != null)
-                {
-                  PropertyInfo? textToAddToHeaderPropertyInfo = currentPlayerType.GetProperty(headerAttribute.TextToAddToHeader);
-                  if (textToAddToHeaderPropertyInfo?.GetValue(currentPlayer, null) != null)
-                  {
-                    text = string.Format(text, textToAddToHeaderPropertyInfo.GetValue(currentPlayer, null));
-                  }
-                }
+            var text = BuildText(playerTypePropertyInfo, currentPlayerType, currentPlayer);
 
-                AddHeaderCellToWorkSheet(worksheetDfn, text, index);
-              }
-              else
+            string key = $"{playerTypePropertyInfo.Module.MetadataToken}_{playerTypePropertyInfo.MetadataToken}_{string.Join("_", index)}";
+            if (!_headers.ContainsKey(key))
+            {
+                CellDfn headerCellDfn = AddHeaderCellToWorkSheet(worksheetDfn, string.IsNullOrEmpty(text) ? string.Empty : text, index);
+                _headers.Add(key, (headerCellDfn, currentPlayer != null));
+            }
+            else
+            {
+              // If the currentPlayer was null when the existing headerCell was added in _headers, then we should update the text.
+              (CellDfn headerCellDfn, bool textCorrectlySetFlag) = _headers[key];
+              if (!textCorrectlySetFlag && currentPlayer != null)
               {
-                AddHeaderCellToWorkSheet(worksheetDfn, string.Empty, index);
+                _headers.Remove(key);
+                headerCellDfn.Value = text;
+                _headers.Add(key, (headerCellDfn, true));
               }
             }
           }
         }
       }
+    }
+
+    private string? BuildText(PropertyInfo playerTypePropertyInfo, Type currentPlayerType, object? currentPlayer)
+    {
+      HeaderAttribute? headerAttribute = GetAttributeFrom<HeaderAttribute>(playerTypePropertyInfo);
+      string? text = null;
+      if (headerAttribute != null)
+      {
+        text = headerAttribute.Text;
+        if (headerAttribute.TextToAddToHeader != null)
+        {
+          PropertyInfo? textToAddToHeaderPropertyInfo = currentPlayerType.GetProperty(headerAttribute.TextToAddToHeader);
+          if (currentPlayer != null)
+          {
+            if (textToAddToHeaderPropertyInfo?.GetValue(currentPlayer, null) != null)
+            {
+              text = string.Format(text, textToAddToHeaderPropertyInfo.GetValue(currentPlayer, null));
+            }
+          }
+        }
+      }
+
+      return text;
     }
 
     private WorkbookDfn BuildWorkbook(object team)
@@ -377,9 +397,7 @@ namespace SimpleExcelExporter
             {
               if (player != null)
               {
-                var playerType = player.GetType();
-                PropertyInfo[] playerTypePropertyInfos = playerType.GetProperties();
-                CalculateMaxNumberOfElement(player, playerTypePropertyInfos);
+                CalculateMaxNumberOfElement(player);
               }
             }
 
@@ -426,18 +444,37 @@ namespace SimpleExcelExporter
       return workbookDfn;
     }
 
-    private void CalculateMaxNumberOfElement(object? player, PropertyInfo[] playerTypePropertyInfos)
+    private void CalculateMaxNumberOfElement(object player)
     {
-      foreach (var playerTypePropertyInfo in playerTypePropertyInfos)
+      var objectQueue = new Queue<object>(); // Use a queue to manage child objects
+      objectQueue.Enqueue(player);
+
+      while (objectQueue.Count > 0)
       {
-        MultiColumnAttribute? multiColumnAttribute = GetAttributeFrom<MultiColumnAttribute>(playerTypePropertyInfo);
-        if (multiColumnAttribute != null && playerTypePropertyInfo.GetValue(player) is IEnumerable<object> childPlayersEnumerable)
+        object currentPlayer = objectQueue.Dequeue();
+        var playerType = currentPlayer.GetType();
+        PropertyInfo[] playerTypePropertyInfos = playerType.GetProperties();
+        foreach (var playerTypePropertyInfo in playerTypePropertyInfos)
         {
-          object[] childPlayers = childPlayersEnumerable.ToArray();
-          int numberOfElement = childPlayers.Length;
-          if (numberOfElement > multiColumnAttribute.MaxNumberOfElement)
+          MultiColumnAttribute? multiColumnAttribute = GetAttributeFrom<MultiColumnAttribute>(playerTypePropertyInfo);
+          if (multiColumnAttribute != null)
           {
-            multiColumnAttribute.MaxNumberOfElement = numberOfElement;
+            string key = $"{playerTypePropertyInfo.Module.MetadataToken}_{playerTypePropertyInfo.MetadataToken}";
+            if (!_multiColumnAttribute.ContainsKey(key))
+            {
+              _multiColumnAttribute.Add(key, multiColumnAttribute.MaxNumberOfElement);
+            }
+
+            if (playerTypePropertyInfo.GetValue(currentPlayer) is IEnumerable<object?> childPlayers)
+            {
+              int numberOfElement = childPlayers.Count(x => x != null);
+              if (numberOfElement > _multiColumnAttribute[key])
+              {
+                _multiColumnAttribute[key] = numberOfElement;
+              }
+
+              objectQueue.Enqueue(childPlayers);
+            }
           }
         }
       }

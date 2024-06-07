@@ -6,7 +6,7 @@
   public class Child
   {
     [CellDefinition(CellDataType.String)]
-    [Header(typeof(ChildOfPlayerRes), "ChildFirstName")]
+    [Header(typeof(ChildOfPlayerRes), "ChildFirstName", nameof(HeaderFirstName))]
     [Index(1)]
     public string? FirstName { get; set; }
 
@@ -14,5 +14,8 @@
     [Header(typeof(ChildOfPlayerRes), "ChildAge")]
     [Index(2)]
     public int? Age { get; set; }
+
+    [IgnoreFromSpreadSheet]
+    public string? HeaderFirstName { get; set; }
   }
 }

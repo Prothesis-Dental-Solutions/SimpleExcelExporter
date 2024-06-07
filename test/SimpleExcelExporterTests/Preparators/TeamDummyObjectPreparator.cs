@@ -16,6 +16,7 @@ namespace SimpleExcelExporter.Tests.Preparators
           PlayerDummyObjectPreparator.Fourth(),
           PlayerDummyObjectPreparator.Fifth(),
           PlayerDummyObjectPreparator.Sixth(),
+          PlayerDummyObjectPreparator.Seventh(),
         },
     };
   }

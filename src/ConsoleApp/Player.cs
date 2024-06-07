@@ -58,7 +58,7 @@
 
     [MultiColumn]
     [Index(10)]
-    public ICollection<Child>? FemaleChildren { get; set; }
+    public ICollection<Child?>? FemaleChildren { get; set; }
 
     [CellDefinition(CellDataType.Number)]
     [Header(typeof(PlayerRes), "GamePlayedColumnName")]

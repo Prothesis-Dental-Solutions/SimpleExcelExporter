@@ -101,10 +101,12 @@ namespace ConsoleApp
         FieldGoalPercentage = null,
         Salary = null,
         MaleChildren = null,
-        FemaleChildren = new List<Child>
+        FemaleChildren = new List<Child?>
            {
-             new () { FirstName = "FirstName1", Age = 1 },
-             new () { FirstName = "FirstName2", Age = 2 },
+             new () { FirstName = "FirstName1", Age = 1, HeaderFirstName = " 1" },
+             new () { FirstName = null, Age = 2, HeaderFirstName = " 2" },
+             null,
+             new () { FirstName = "FirstName4", Age = 4, HeaderFirstName = " 4" },
            },
       };
       team.Players.Add(nullPlayer);
@@ -125,17 +127,19 @@ namespace ConsoleApp
           GamePlayed = i,
           MaleChildren = new List<Child>
           {
-            new () { FirstName = "NephewFirstName1", Age = 1 },
+            new () { FirstName = "NephewFirstName1", Age = 1, HeaderFirstName = " M1" },
           },
-          FemaleChildren = new List<Child>
+          FemaleChildren = new List<Child?>
            {
-             new () { FirstName = "FirstName1", Age = 1 },
+             new () { FirstName = "FirstName1", Age = 1, HeaderFirstName = " 1" },
            },
         };
 
         if (i % 2 == 0)
         {
-          player.FemaleChildren.Add(new Child { FirstName = "FirstName2", Age = 2 });
+          player.FemaleChildren.Add(new Child { FirstName = "FirstName2", Age = 2, HeaderFirstName = " 2" });
+          player.FemaleChildren.Add(new Child { FirstName = "FirstName3", Age = 3, HeaderFirstName = " 3" });
+          player.FemaleChildren.Add(new Child { FirstName = "FirstName4", Age = 4, HeaderFirstName = " 4" });
         }
 
         team.Players.Add(player);
@@ -235,7 +239,7 @@ namespace ConsoleApp
             NumberOfVictory = 45,
             FieldGoalPercentage = 0.1111,
             Salary = 2000.5m,
-            FemaleChildren = new List<Child>
+            FemaleChildren = new List<Child?>
              {
                new () { FirstName = "FirstName1", Age = 11 },
                new () { FirstName = "FirstName2", Age = 22 },
@@ -255,7 +259,7 @@ namespace ConsoleApp
             NumberOfVictory = 52,
             FieldGoalPercentage = 0.222,
             Salary = 2141.5452m,
-            FemaleChildren = new List<Child>
+            FemaleChildren = new List<Child?>
              {
                new () { FirstName = "FirstName1", Age = 11 },
              },

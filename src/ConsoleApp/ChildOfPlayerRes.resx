@@ -121,6 +121,33 @@
     <value>Child Age</value>
   </data>
   <data name="ChildFirstName" xml:space="preserve">
-    <value>Child FirstName</value>
+    <value>Child FirstName {0}</value>
+  </data>
+  <data name="DateOfBirthColumnName" xml:space="preserve">
+    <value>Date of birth</value>
+  </data>
+  <data name="SizeColumnName" xml:space="preserve">
+    <value>Size</value>
+  </data>
+  <data name="SalaryColumnName" xml:space="preserve">
+    <value>Salary</value>
+  </data>
+  <data name="PlayerNameColumnName" xml:space="preserve">
+    <value>Player name</value>
+  </data>
+  <data name="PlayerCodeColumnName" xml:space="preserve">
+    <value>Player code</value>
+  </data>
+  <data name="NumberOfVictoryColumnName" xml:space="preserve">
+    <value>Number of victory</value>
+  </data>
+  <data name="IsActiveFlagColumnName" xml:space="preserve">
+    <value>Active</value>
+  </data>
+  <data name="FieldGoalPercentageColumnName" xml:space="preserve">
+    <value>Goal percentage</value>
+  </data>
+  <data name="PracticeTimeColumnName" xml:space="preserve">
+    <value>Training time</value>
   </data>
 </root>
