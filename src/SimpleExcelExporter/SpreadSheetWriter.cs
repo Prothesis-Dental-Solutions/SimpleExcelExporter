@@ -20,6 +20,8 @@ namespace SimpleExcelExporter
 
     private readonly IDictionary<string, (CellDfn, bool)> _headers = new Dictionary<string, (CellDfn, bool)>();
 
+    private readonly IDictionary<string, int> _multiColumnAttribute = new Dictionary<string, int>();
+
     private readonly Stream _stream;
 
     private readonly Stylesheet _stylesheet;
@@ -182,7 +184,8 @@ namespace SimpleExcelExporter
           {
             if (currentPlayer != null && playerTypePropertyInfo.GetValue(currentPlayer) is IEnumerable<object?> childPlayers)
             {
-              int maxNumberOfElement = multiColumnAttribute.MaxNumberOfElement;
+              string key = $"{playerTypePropertyInfo.Module.MetadataToken}_{playerTypePropertyInfo.MetadataToken}";
+              int maxNumberOfElement = _multiColumnAttribute[key];
               int childIteration = 1;
               Type childPlayerType = playerTypePropertyInfo.PropertyType.GenericTypeArguments.Single();
               PropertyInfo[]? childPlayerTypePropertyInfos = null;
@@ -207,7 +210,8 @@ namespace SimpleExcelExporter
             else
             {
               // Add empty cells if needed
-              int numberOfEmptyCellToAdd = multiColumnAttribute.MaxNumberOfElement;
+              string key = $"{playerTypePropertyInfo.Module.MetadataToken}_{playerTypePropertyInfo.MetadataToken}";
+              int numberOfEmptyCellToAdd = _multiColumnAttribute[key];
               Type? childPlayerType = playerTypePropertyInfo.PropertyType.GenericTypeArguments.FirstOrDefault();
               if (childPlayerType != null)
               {
@@ -256,7 +260,8 @@ namespace SimpleExcelExporter
           {
             if (currentPlayer != null && playerTypePropertyInfo.GetValue(currentPlayer) is IEnumerable<object?> childPlayers)
             {
-              int maxNumberOfElement = multiColumnAttribute.MaxNumberOfElement;
+              string key = $"{playerTypePropertyInfo.Module.MetadataToken}_{playerTypePropertyInfo.MetadataToken}";
+              int maxNumberOfElement = _multiColumnAttribute[key];
               int childIteration = 1;
               Type childPlayerType = playerTypePropertyInfo.PropertyType.GenericTypeArguments.Single();
               PropertyInfo[]? childPlayerTypePropertyInfos = null;
@@ -281,7 +286,8 @@ namespace SimpleExcelExporter
             else
             {
               // Add empty cells if needed
-              int numberOfEmptyCellToAdd = multiColumnAttribute.MaxNumberOfElement;
+              string key = $"{playerTypePropertyInfo.Module.MetadataToken}_{playerTypePropertyInfo.MetadataToken}";
+              int numberOfEmptyCellToAdd = _multiColumnAttribute[key];
               Type? childPlayerType = playerTypePropertyInfo.PropertyType.GenericTypeArguments.FirstOrDefault();
               if (childPlayerType != null)
               {
@@ -451,15 +457,24 @@ namespace SimpleExcelExporter
         foreach (var playerTypePropertyInfo in playerTypePropertyInfos)
         {
           MultiColumnAttribute? multiColumnAttribute = GetAttributeFrom<MultiColumnAttribute>(playerTypePropertyInfo);
-          if (multiColumnAttribute != null && playerTypePropertyInfo.GetValue(currentPlayer) is IEnumerable<object?> childPlayers)
+          if (multiColumnAttribute != null)
           {
-            int numberOfElement = childPlayers.Count(x => x != null);
-            if (numberOfElement > multiColumnAttribute.MaxNumberOfElement)
+            string key = $"{playerTypePropertyInfo.Module.MetadataToken}_{playerTypePropertyInfo.MetadataToken}";
+            if (!_multiColumnAttribute.ContainsKey(key))
             {
-              multiColumnAttribute.MaxNumberOfElement = numberOfElement;
+              _multiColumnAttribute.Add(key, multiColumnAttribute.MaxNumberOfElement);
             }
 
-            objectQueue.Enqueue(childPlayers);
+            if (playerTypePropertyInfo.GetValue(currentPlayer) is IEnumerable<object?> childPlayers)
+            {
+              int numberOfElement = childPlayers.Count(x => x != null);
+              if (numberOfElement > _multiColumnAttribute[key])
+              {
+                _multiColumnAttribute[key] = numberOfElement;
+              }
+
+              objectQueue.Enqueue(childPlayers);
+            }
           }
         }
       }
