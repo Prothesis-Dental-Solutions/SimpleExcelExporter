@@ -1,6 +1,5 @@
-﻿namespace SimpleExcelExporter.Tests.Annotations
+namespace SimpleExcelExporter.Tests.Annotations
 {
-  using System;
   using NUnit.Framework;
   using SimpleExcelExporter.Annotations;
   using SimpleExcelExporter.Resources;
@@ -12,13 +11,13 @@
     public void ConstructorTest()
     {
       // Prepare
-      Type resourceType = typeof(MessageRes);
+      var resourceType = typeof(MessageRes);
 
       var emptyResultMessageAttribute = new EmptyResultMessageAttribute(resourceType, "EmptyMessageDefault");
 
       // Act & Check
-      Assert.IsNotNull(emptyResultMessageAttribute);
-      Assert.AreEqual(MessageRes.EmptyMessageDefault, emptyResultMessageAttribute.Text);
+      Assert.That(emptyResultMessageAttribute, Is.Not.Null);
+      Assert.That(MessageRes.EmptyMessageDefault, Is.EqualTo(emptyResultMessageAttribute.Text));
     }
   }
 }

@@ -1,7 +1,6 @@
-﻿namespace SimpleExcelExporter
+namespace SimpleExcelExporter
 {
   using System;
-  using System.Runtime.Serialization;
 
   public class SimpleExcelExporterException : Exception
   {
@@ -20,13 +19,6 @@
       string message,
       Exception innerException)
       : base(message, innerException)
-    {
-    }
-
-    protected SimpleExcelExporterException(
-      SerializationInfo serializationInfo,
-      StreamingContext streamingContext)
-      : base(serializationInfo, streamingContext)
     {
     }
   }

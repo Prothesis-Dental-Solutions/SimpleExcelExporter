@@ -1,4 +1,4 @@
-﻿namespace SimpleExcelExporter.Tests
+namespace SimpleExcelExporter.Tests
 {
   using System;
   using NUnit.Framework;
@@ -11,7 +11,7 @@
     public void GetResourceLookupTest()
     {
       // Prepare
-      Type resourceType = typeof(MessageRes);
+      var resourceType = typeof(MessageRes);
 
       // Act && Check -- ResourceType invalid
       Assert.Throws<InvalidOperationException>(() => ResourceHelper.GetResourceLookup(typeof(string), string.Empty));
@@ -23,7 +23,7 @@
       var resultValue = ResourceHelper.GetResourceLookup(resourceType, "EmptyMessageDefault");
 
       // Check
-      Assert.AreEqual(resultValue, MessageRes.EmptyMessageDefault);
+      Assert.That(resultValue, Is.EqualTo(MessageRes.EmptyMessageDefault));
     }
   }
 }

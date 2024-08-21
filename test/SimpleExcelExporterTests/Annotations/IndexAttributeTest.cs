@@ -1,4 +1,4 @@
-﻿
+
 namespace SimpleExcelExporter.Tests.Annotations
 {
   using System;
@@ -15,13 +15,12 @@ namespace SimpleExcelExporter.Tests.Annotations
       Assert.Throws<InvalidOperationException>(() => new IndexAttribute(-1));
 
       // Prepare
-      int expectedIndex = 1;
+      var expectedIndex = 1;
       var indexAttribute = new IndexAttribute(expectedIndex);
 
       //Act && Check
-      Assert.IsNotNull(indexAttribute.Index);
-      Assert.AreEqual(indexAttribute.Index, expectedIndex);
-
+      Assert.That(indexAttribute.Index, Is.Not.Null);
+      Assert.That(indexAttribute.Index, Is.EqualTo(expectedIndex));
     }
   }
 }

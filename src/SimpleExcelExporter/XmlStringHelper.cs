@@ -7,9 +7,9 @@
   {
     public static string Sanitize(string input)
     {
-      StringBuilder sb = new StringBuilder();
+      var sb = new StringBuilder();
 
-      foreach (char c in input)
+      foreach (var c in input)
       {
         if (XmlConvert.IsXmlChar(c))
         {

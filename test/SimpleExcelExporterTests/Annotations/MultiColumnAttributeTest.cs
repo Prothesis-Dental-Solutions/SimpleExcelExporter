@@ -1,4 +1,4 @@
-﻿namespace SimpleExcelExporter.Tests.Annotations
+namespace SimpleExcelExporter.Tests.Annotations
 {
   using NUnit.Framework;
   using SimpleExcelExporter.Annotations;
@@ -13,9 +13,9 @@
       var multiColumnAttribute = new MultiColumnAttribute();
 
       // Act & Check
-      Assert.IsNotNull(multiColumnAttribute);
-      Assert.AreEqual(multiColumnAttribute.MinimalNumberOfElement, 0);
-      Assert.AreEqual(multiColumnAttribute.MaxNumberOfElement, 0);
+      Assert.That(multiColumnAttribute, Is.Not.Null);
+      Assert.That(multiColumnAttribute.MinimalNumberOfElement, Is.EqualTo(0));
+      Assert.That(multiColumnAttribute.MaxNumberOfElement, Is.EqualTo(0));
     }
 
 
@@ -26,9 +26,9 @@
       var multiColumnAttribute = new MultiColumnAttribute(6);
 
       // Act & Check
-      Assert.IsNotNull(multiColumnAttribute);
-      Assert.AreEqual(multiColumnAttribute.MinimalNumberOfElement, 6);
-      Assert.AreEqual(multiColumnAttribute.MaxNumberOfElement, 6);
+      Assert.That(multiColumnAttribute, Is.Not.Null);
+      Assert.That(multiColumnAttribute.MinimalNumberOfElement, Is.EqualTo(6));
+      Assert.That(multiColumnAttribute.MaxNumberOfElement, Is.EqualTo(6));
     }
   }
 }
