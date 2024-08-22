@@ -21,6 +21,7 @@
     <OutputPath>bin\release</OutputPath>
   </PropertyGroup>
 
+
   <ItemGroup>
     <AdditionalFiles Include="..\..\stylecop.json" Link="stylecop.json" />
   </ItemGroup>
