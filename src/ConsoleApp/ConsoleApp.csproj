@@ -41,6 +41,10 @@
       <Generator>PublicResXFileCodeGenerator</Generator>
       <LastGenOutput>ChildOfPlayerRes.Designer.cs</LastGenOutput>
     </EmbeddedResource>
+    <EmbeddedResource Update="TeamRes.fr-FR.resx">
+      <LastGenOutput>TeamRes.fr-FR.Designer.cs</LastGenOutput>
+      <Generator>PublicResXFileCodeGenerator</Generator>
+    </EmbeddedResource>
     <EmbeddedResource Update="TeamRes.resx">
       <Generator>PublicResXFileCodeGenerator</Generator>
       <LastGenOutput>TeamRes.Designer.cs</LastGenOutput>
@@ -56,6 +60,11 @@
       <DesignTime>True</DesignTime>
       <AutoGen>True</AutoGen>
       <DependentUpon>ChildOfPlayerRes.resx</DependentUpon>
+    </Compile>
+    <Compile Update="TeamRes.fr-FR.Designer.cs">
+      <DependentUpon>TeamRes.fr-FR.resx</DependentUpon>
+      <DesignTime>True</DesignTime>
+      <AutoGen>True</AutoGen>
     </Compile>
     <Compile Update="TeamRes.Designer.cs">
       <DesignTime>True</DesignTime>
