@@ -22,8 +22,8 @@ namespace SimpleExcelExporter.Definitions
         return 0;
       }
 
-      int xCount = x.Index.Count;
-      int yCount = y.Index.Count;
+      var xCount = x.Index.Count;
+      var yCount = y.Index.Count;
 
       if (xCount == 0 && yCount == 0)
       {
@@ -40,9 +40,9 @@ namespace SimpleExcelExporter.Definitions
         return 1;
       }
 
-      int minCount = Math.Min(xCount, yCount);
+      var minCount = Math.Min(xCount, yCount);
 
-      for (int i = 0; i < minCount; i++)
+      for (var i = 0; i < minCount; i++)
       {
         if (x.Index[i] < y.Index[i])
         {

@@ -1,4 +1,4 @@
-﻿namespace SimpleExcelExporter.Tests
+namespace SimpleExcelExporter.Tests
 {
   using NUnit.Framework;
 
@@ -9,10 +9,10 @@
     public void SanitizeTest()
     {
       // Act
-      string value = XmlStringHelper.Sanitize("|\b|\n|\t|\r|<|>|&|'|\"|");
+      var value = XmlStringHelper.Sanitize("|\b|\n|\t|\r|<|>|&|'|\"|");
 
       // Check
-      Assert.AreEqual("| |\n|\t|\r|<|>|&|'|\"|", value);
+      Assert.That("| |\n|\t|\r|<|>|&|'|\"|", Is.EqualTo(value));
     }
   }
 }

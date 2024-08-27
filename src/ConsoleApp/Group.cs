@@ -1,16 +1,17 @@
-namespace ConsoleApp;
-
-using System.Collections.Generic;
-using SimpleExcelExporter.Annotations;
-
-public class Group
+namespace ConsoleApp
 {
-  private ICollection<Person>? _persons;
+  using System.Collections.Generic;
+  using SimpleExcelExporter.Annotations;
 
-  [SheetName(typeof(TeamRes), "SheetName")]
-  [EmptyResultMessage(typeof(TeamRes), "EmptyResultMessage")]
-  public ICollection<Person> Persons
+  public class Group
   {
-    get => _persons ??= new HashSet<Person>();
+    private ICollection<Person>? _persons;
+
+    [SheetName(typeof(TeamRes), "SheetName")]
+    [EmptyResultMessage(typeof(TeamRes), "EmptyResultMessage")]
+    public ICollection<Person> Persons
+    {
+      get => _persons ??= new HashSet<Person>();
+    }
   }
 }

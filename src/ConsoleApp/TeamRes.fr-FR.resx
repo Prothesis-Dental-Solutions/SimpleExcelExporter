@@ -117,37 +117,10 @@
   <resheader name="writer">
     <value>System.Resources.ResXResourceWriter, System.Windows.Forms, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089</value>
   </resheader>
-  <data name="PlayerNameColumnName" xml:space="preserve">
-    <value>Nom du joueur</value>
+  <data name="SheetName" xml:space="preserve">
+    <value>Joueurs</value>
   </data>
-  <data name="DateOfBirthColumnName" xml:space="preserve">
-    <value>Date de naissance</value>
-  </data>
-  <data name="PlayerCodeColumnName" xml:space="preserve">
-    <value>Code joueur</value>
-  </data>
-  <data name="NumberOfVictoryColumnName" xml:space="preserve">
-    <value>Nombre de victoire</value>
-  </data>
-  <data name="IsActiveFlagColumnName" xml:space="preserve">
-    <value>Actif</value>
-  </data>
-  <data name="SizeColumnName" xml:space="preserve">
-    <value>Taille</value>
-  </data>
-  <data name="SalaryColumnName" xml:space="preserve">
-    <value>Salaire</value>
-  </data>
-  <data name="FieldGoalPercentageColumnName" xml:space="preserve">
-    <value>Pourcentage de buts sur le terrain</value>
-  </data>
-  <data name="PracticeTimeColumnName" xml:space="preserve">
-    <value>Heure d'entraînement</value>
-  </data>
-  <data name="ChildFirstName" xml:space="preserve">
-    <value>Prénom enfant {0}</value>
-  </data>
-  <data name="ChildAge" xml:space="preserve">
-    <value>Age enfant</value>
+  <data name="EmptyResultMessage" xml:space="preserve">
+    <value>Aucun joueur n'a été trouvé.</value>
   </data>
 </root>

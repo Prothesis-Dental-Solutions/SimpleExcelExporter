@@ -1,4 +1,4 @@
-﻿namespace SimpleExcelExporter.Tests.Annotations
+namespace SimpleExcelExporter.Tests.Annotations
 {
   using NUnit.Framework;
   using SimpleExcelExporter.Annotations;
@@ -14,8 +14,8 @@
       var cellDefinitionAttribute = new CellDefinitionAttribute(CellDataType.Boolean);
 
       // Act & Check
-      Assert.IsNotNull(cellDefinitionAttribute);
-      Assert.AreEqual(CellDataType.Boolean, cellDefinitionAttribute.CellDataType);
+      Assert.That(cellDefinitionAttribute, Is.Not.Null);
+      Assert.That(CellDataType.Boolean, Is.EqualTo(cellDefinitionAttribute.CellDataType));
     }
   }
 }

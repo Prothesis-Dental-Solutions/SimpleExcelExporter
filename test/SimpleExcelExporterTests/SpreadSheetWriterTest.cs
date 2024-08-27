@@ -35,7 +35,7 @@ namespace SimpleExcelExporter.Tests
       spreadsheetWriter.Write();
 
       // Check
-      Assert.AreNotEqual(memoryStream.Length, 0);
+      Assert.That(memoryStream.Length, Is.Not.EqualTo(0));
       Validate(memoryStream, 1, 4, 7);
 
       // Prepare an object
@@ -47,7 +47,7 @@ namespace SimpleExcelExporter.Tests
       spreadsheetWriter.Write();
 
       // Check
-      Assert.AreNotEqual(memoryStream.Length, 0);
+      Assert.That(memoryStream.Length, Is.Not.EqualTo(0));
       Validate(memoryStream, 1, 1, 1);
 
       // Prepare an object
@@ -59,7 +59,7 @@ namespace SimpleExcelExporter.Tests
       spreadsheetWriter.Write();
 
       // Check
-      Assert.AreNotEqual(memoryStream.Length, 0);
+      Assert.That(memoryStream.Length, Is.Not.EqualTo(0));
       // expected 1 sheet, 6 rows (1 header + 5 players + 2 children of player), 20 cells
       Validate(memoryStream, 1, 8, 20);
 
@@ -72,7 +72,7 @@ namespace SimpleExcelExporter.Tests
       spreadsheetWriter.Write();
 
       // Check
-      Assert.AreNotEqual(memoryStream.Length, 0);
+      Assert.That(memoryStream.Length, Is.Not.EqualTo(0));
       Validate(memoryStream, 1, 1, 1);
 
       // Prepare an object - with same index column
@@ -84,7 +84,7 @@ namespace SimpleExcelExporter.Tests
       spreadsheetWriter.Write();
 
       // Check
-      Assert.AreNotEqual(memoryStream.Length, 0);
+      Assert.That(memoryStream.Length, Is.Not.EqualTo(0));
       // expected 1 sheet, 4 rows (1 header + 3 players), 3 cells
       Validate(memoryStream, 1, 4, 4);
 
@@ -109,17 +109,17 @@ namespace SimpleExcelExporter.Tests
 
       // Act
       // ReSharper disable once ObjectCreationAsStatement
-      SimpleExcelExporterException simpleExcelExporterException = Assert.Throws<SimpleExcelExporterException>(() => new SpreadsheetWriter(memoryStream, workBookDfn));
+      var simpleExcelExporterException = Assert.Throws<SimpleExcelExporterException>(() => new SpreadsheetWriter(memoryStream, workBookDfn));
 
       // Check
-      Assert.IsNotNull(simpleExcelExporterException);
-      Assert.AreEqual(expected.Message, simpleExcelExporterException.Message);
+      Assert.That(simpleExcelExporterException, Is.Not.Null);
+      Assert.That(expected.Message, Is.EqualTo(simpleExcelExporterException!.Message));
     }
 
-    private static readonly List<string> ExpectedErrors = new()
-    {
+    private static readonly List<string> ExpectedErrors =
+    [
       "The attribute 't' has invalid value 'd'. The Enumeration constraint failed.",
-    };
+    ];
 
     private static void Validate(
       Stream memoryStream,
@@ -127,13 +127,13 @@ namespace SimpleExcelExporter.Tests
       int expectedRowsCount,
       int expectedCellsCount)
     {
-      using SpreadsheetDocument spreadsheetDocument = SpreadsheetDocument.Open(memoryStream, true);
-      OpenXmlValidator validator = new OpenXmlValidator();
+      using var spreadsheetDocument = SpreadsheetDocument.Open(memoryStream, true);
+      var validator = new OpenXmlValidator();
       var errors = validator.Validate(spreadsheetDocument).Where(validationError => !ExpectedErrors.Contains(validationError.Description));
-      Assert.IsEmpty(errors);
+      Assert.That(errors, Is.Empty);
 
       var fileFormat = validator.FileFormat;
-      Assert.AreEqual(fileFormat, FileFormatVersions.Office2007);
+      Assert.That(fileFormat, Is.EqualTo(FileFormatVersions.Office2007));
 
       var workbookPart = spreadsheetDocument.WorkbookPart;
       var worksheetsPart = workbookPart!.WorksheetParts.First();
@@ -141,11 +141,11 @@ namespace SimpleExcelExporter.Tests
       var rows = sheetData!.Descendants<Row>().ToList();
       var cells = rows[0].Descendants<Cell>();
 
-      Assert.IsNotNull(workbookPart.Workbook);
-      Assert.IsNotNull(workbookPart.Workbook.Sheets);
-      Assert.AreEqual(expectedSheetsCount, workbookPart.Workbook.Sheets!.Count());
-      Assert.AreEqual(expectedRowsCount, rows.Count);
-      Assert.AreEqual(expectedCellsCount, cells.Count());
+      Assert.That(workbookPart.Workbook, Is.Not.Null);
+      Assert.That(workbookPart.Workbook.Sheets, Is.Not.Null);
+      Assert.That(expectedSheetsCount, Is.EqualTo(workbookPart.Workbook.Sheets!.Count()));
+      Assert.That(expectedRowsCount, Is.EqualTo(rows.Count));
+      Assert.That(expectedCellsCount, Is.EqualTo(cells.Count()));
     }
   }
 }

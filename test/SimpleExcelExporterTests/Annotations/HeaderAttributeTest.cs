@@ -1,6 +1,5 @@
-﻿namespace SimpleExcelExporter.Tests.Annotations
+namespace SimpleExcelExporter.Tests.Annotations
 {
-  using System;
   using NUnit.Framework;
   using SimpleExcelExporter.Annotations;
   using SimpleExcelExporter.Tests.Models;
@@ -12,15 +11,15 @@
     public void ConstructorTest()
     {
       // Prepare
-      Type resourceType = typeof(PlayerDummyObjectRes);
+      var resourceType = typeof(PlayerDummyObjectRes);
 
       var headerAttribute = new HeaderAttribute(resourceType, "PlayerNameColumnName");
 
       // Act & Check
-      Assert.IsNotNull(headerAttribute);
-      Assert.AreEqual(PlayerDummyObjectRes.PlayerNameColumnName, headerAttribute.Text);
-      Assert.AreEqual("PlayerNameColumnName", headerAttribute.ResourceName);
-      Assert.AreEqual(typeof(PlayerDummyObjectRes), headerAttribute.ResourceType);
+      Assert.That(headerAttribute, Is.Not.Null);
+      Assert.That(PlayerDummyObjectRes.PlayerNameColumnName, Is.EqualTo(headerAttribute.Text));
+      Assert.That("PlayerNameColumnName", Is.EqualTo(headerAttribute.ResourceName));
+      Assert.That(typeof(PlayerDummyObjectRes), Is.EqualTo(headerAttribute.ResourceType));
     }
   }
 }

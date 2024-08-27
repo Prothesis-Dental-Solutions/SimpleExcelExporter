@@ -33,18 +33,18 @@ namespace ConsoleApp
       Console.WriteLine("GenerateBigSpreadsheetFromAnnotatedData");
       using var memoryStream = new MemoryStream();
       using var streamWriter = new StreamWriter(memoryStream);
-      Stopwatch stopwatch = new Stopwatch();
+      var stopwatch = new Stopwatch();
       stopwatch.Start();
       var group = new Group();
       var person = new Person { Name = "0" };
       group.Persons.Add(person);
-      Person currentPerson = person;
-      for (int i = 1; i < 2; i++)
+      var currentPerson = person;
+      for (var i = 1; i < 2; i++)
       {
         var child = new Person { Name = $"{i}_0" };
         currentPerson.Children.Add(child);
 
-        for (int j = 1; j < 16383; j++)
+        for (var j = 1; j < 16383; j++)
         {
           child = new Person { Name = $"{i}_{j}" };
           currentPerson.Children.Add(child);
@@ -59,7 +59,7 @@ namespace ConsoleApp
       Console.WriteLine("Instantiating the SpreadsheetWriter...");
       stopwatch.Reset();
       stopwatch.Start();
-      SpreadsheetWriter spreadsheetWriter = new SpreadsheetWriter(streamWriter.BaseStream, group);
+      var spreadsheetWriter = new SpreadsheetWriter(streamWriter.BaseStream, group);
       stopwatch.Stop();
       Console.WriteLine($"Done in {stopwatch.Elapsed.Seconds} seconds !");
 
@@ -70,7 +70,7 @@ namespace ConsoleApp
       stopwatch.Stop();
       Console.WriteLine($"Done in {stopwatch.Elapsed.Seconds} seconds !");
 
-      using FileStream file = new FileStream(Path.Combine(tempDi.FullName, "TestWithData5.xlsx"), FileMode.Create, FileAccess.Write);
+      using var file = new FileStream(Path.Combine(tempDi.FullName, "TestWithData5.xlsx"), FileMode.Create, FileAccess.Write);
       memoryStream.WriteTo(file);
     }
 
@@ -80,10 +80,10 @@ namespace ConsoleApp
       using var memoryStream = new MemoryStream();
       using var streamWriter = new StreamWriter(memoryStream);
       var team = new Team();
-      Random rnd = new Random();
-      WeakPseudoRandomDateTime weakPseudoRandomDate = new WeakPseudoRandomDateTime();
+      var rnd = new Random();
+      var weakPseudoRandomDate = new WeakPseudoRandomDateTime();
       Console.WriteLine("Generating the players...");
-      Stopwatch stopwatch = new Stopwatch();
+      var stopwatch = new Stopwatch();
       stopwatch.Start();
 
       var nullPlayer = new Player
@@ -111,7 +111,7 @@ namespace ConsoleApp
       };
       team.Players.Add(nullPlayer);
 
-      for (int i = 1; i < 1000000; i++)
+      for (var i = 1; i < 1000000; i++)
       {
         var player = new Player
         {
@@ -151,7 +151,7 @@ namespace ConsoleApp
       Console.WriteLine("Instantiating the SpreadsheetWriter...");
       stopwatch.Reset();
       stopwatch.Start();
-      SpreadsheetWriter spreadsheetWriter = new SpreadsheetWriter(streamWriter.BaseStream, team);
+      var spreadsheetWriter = new SpreadsheetWriter(streamWriter.BaseStream, team);
       stopwatch.Stop();
       Console.WriteLine($"Done in {stopwatch.Elapsed.Seconds} seconds !");
 
@@ -162,7 +162,7 @@ namespace ConsoleApp
       stopwatch.Stop();
       Console.WriteLine($"Done in {stopwatch.Elapsed.Seconds} seconds !");
 
-      using FileStream file = new FileStream(Path.Combine(tempDi.FullName, "TestWithData3.xlsx"), FileMode.Create, FileAccess.Write);
+      using var file = new FileStream(Path.Combine(tempDi.FullName, "TestWithData3.xlsx"), FileMode.Create, FileAccess.Write);
       memoryStream.WriteTo(file);
     }
 
@@ -174,12 +174,12 @@ namespace ConsoleApp
       var workbookDfn = new WorkbookDfn();
       var worksheetDfn = new WorksheetDfn("Team");
       workbookDfn.Worksheets.Add(worksheetDfn);
-      Random rnd = new Random();
-      WeakPseudoRandomDateTime weakPseudoRandomDate = new WeakPseudoRandomDateTime();
+      var rnd = new Random();
+      var weakPseudoRandomDate = new WeakPseudoRandomDateTime();
       Console.WriteLine("Generating the players...");
-      Stopwatch stopwatch = new Stopwatch();
+      var stopwatch = new Stopwatch();
       stopwatch.Start();
-      for (int i = 0; i < 1000000; i++)
+      for (var i = 0; i < 1000000; i++)
       {
         var rowDfn = new RowDfn
         {
@@ -204,7 +204,7 @@ namespace ConsoleApp
       Console.WriteLine("Instantiating the SpreadsheetWriter...");
       stopwatch.Reset();
       stopwatch.Start();
-      SpreadsheetWriter spreadsheetWriter = new SpreadsheetWriter(streamWriter.BaseStream, workbookDfn);
+      var spreadsheetWriter = new SpreadsheetWriter(streamWriter.BaseStream, workbookDfn);
       stopwatch.Stop();
       Console.WriteLine($"Done in {stopwatch.Elapsed.Seconds} seconds !");
 
@@ -215,7 +215,7 @@ namespace ConsoleApp
       stopwatch.Stop();
       Console.WriteLine($"Done in {stopwatch.Elapsed.Seconds} seconds !");
 
-      using FileStream file = new FileStream(Path.Combine(tempDi.FullName, "TestWithData4.xlsx"), FileMode.Create, FileAccess.Write);
+      using var file = new FileStream(Path.Combine(tempDi.FullName, "TestWithData4.xlsx"), FileMode.Create, FileAccess.Write);
       memoryStream.WriteTo(file);
     }
 
@@ -297,10 +297,10 @@ namespace ConsoleApp
         },
       };
 
-      SpreadsheetWriter spreadsheetWriter = new SpreadsheetWriter(streamWriter.BaseStream, team);
+      var spreadsheetWriter = new SpreadsheetWriter(streamWriter.BaseStream, team);
       spreadsheetWriter.Write();
 
-      using FileStream file = new FileStream(Path.Combine(tempDi.FullName, "TestWithData2.xlsx"), FileMode.Create, FileAccess.Write);
+      using var file = new FileStream(Path.Combine(tempDi.FullName, "TestWithData2.xlsx"), FileMode.Create, FileAccess.Write);
       memoryStream.WriteTo(file);
     }
 
@@ -311,10 +311,10 @@ namespace ConsoleApp
       using var streamWriter = new StreamWriter(memoryStream);
       var team = new Team();
 
-      SpreadsheetWriter spreadsheetWriter = new SpreadsheetWriter(streamWriter.BaseStream, team);
+      var spreadsheetWriter = new SpreadsheetWriter(streamWriter.BaseStream, team);
       spreadsheetWriter.Write();
 
-      using FileStream file = new FileStream(Path.Combine(tempDi.FullName, "TestWithDataEmpty.xlsx"), FileMode.Create, FileAccess.Write);
+      using var file = new FileStream(Path.Combine(tempDi.FullName, "TestWithDataEmpty.xlsx"), FileMode.Create, FileAccess.Write);
       memoryStream.WriteTo(file);
     }
 
@@ -388,10 +388,10 @@ namespace ConsoleApp
       row32.Cells.Add(new CellDfn(new TimeSpan(8, 2, 0), cellDataType: CellDataType.Time));
       worksheet3Dfn.Rows.Add(row32);
 
-      SpreadsheetWriter spreadsheetWriter = new SpreadsheetWriter(streamWriter.BaseStream, workbookDfn);
+      var spreadsheetWriter = new SpreadsheetWriter(streamWriter.BaseStream, workbookDfn);
       spreadsheetWriter.Write();
 
-      using FileStream file = new FileStream(Path.Combine(tempDi.FullName, "TestWithData1.xlsx"), FileMode.Create, FileAccess.Write);
+      using var file = new FileStream(Path.Combine(tempDi.FullName, "TestWithData1.xlsx"), FileMode.Create, FileAccess.Write);
       memoryStream.WriteTo(file);
     }
   }
