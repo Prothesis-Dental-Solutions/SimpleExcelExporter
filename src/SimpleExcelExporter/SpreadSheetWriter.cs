@@ -118,14 +118,14 @@ namespace SimpleExcelExporter
       rowDfn.Cells.Add(cellDfn);
     }
 
-    private static void GenerateWorksheetPartContent(WorksheetPart worksheetPart, SheetData sheetData, bool tabSeletedFlag)
+    private static void GenerateWorksheetPartContent(WorksheetPart worksheetPart, SheetData sheetData, bool tabSelectedFlag)
     {
       var worksheet = new Worksheet();
       var sheetDimension = new SheetDimension { Reference = "A1" };
 
       var sheetViews = new SheetViews();
 
-      var sheetView = new SheetView { TabSelected = tabSeletedFlag, WorkbookViewId = 0U };
+      var sheetView = new SheetView { TabSelected = tabSelectedFlag, WorkbookViewId = 0U };
       var selection = new Selection { ActiveCell = "A1", SequenceOfReferences = new ListValue<StringValue> { InnerText = "A1" } };
 
       _ = sheetView.AppendChild(selection);
