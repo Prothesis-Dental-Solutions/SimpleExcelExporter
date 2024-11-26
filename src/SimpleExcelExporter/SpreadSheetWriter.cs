@@ -118,14 +118,14 @@ namespace SimpleExcelExporter
       rowDfn.Cells.Add(cellDfn);
     }
 
-    private static void GenerateWorksheetPartContent(WorksheetPart worksheetPart, SheetData sheetData)
+    private static void GenerateWorksheetPartContent(WorksheetPart worksheetPart, SheetData sheetData, bool tabSeletedFlag)
     {
       var worksheet = new Worksheet();
       var sheetDimension = new SheetDimension { Reference = "A1" };
 
       var sheetViews = new SheetViews();
 
-      var sheetView = new SheetView { TabSelected = true, WorkbookViewId = 0U };
+      var sheetView = new SheetView { TabSelected = tabSeletedFlag, WorkbookViewId = 0U };
       var selection = new Selection { ActiveCell = "A1", SequenceOfReferences = new ListValue<StringValue> { InnerText = "A1" } };
 
       _ = sheetView.AppendChild(selection);
@@ -615,6 +615,7 @@ namespace SimpleExcelExporter
     {
       var workbookPart = document.AddWorkbookPart();
       var workbook = new Workbook();
+      workbook.Append(new BookViews(new WorkbookView()));
       workbookPart.Workbook = workbook;
       var sheets = new Sheets();
       _ = workbook.AppendChild(sheets);
@@ -630,7 +631,7 @@ namespace SimpleExcelExporter
         var sheet = new Sheet { Name = worksheet.Name, SheetId = count, Id = workbookPart.GetIdOfPart(worksheetPart) };
         _ = sheets.AppendChild(sheet);
         var sheetData = GenerateSheetDataForDetails(worksheet);
-        GenerateWorksheetPartContent(worksheetPart, sheetData);
+        GenerateWorksheetPartContent(worksheetPart, sheetData, count == 1U);
         count++;
       }
     }
