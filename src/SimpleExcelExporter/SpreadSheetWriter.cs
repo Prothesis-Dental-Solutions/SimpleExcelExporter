@@ -92,6 +92,9 @@ namespace SimpleExcelExporter
       FixRelationshipTargets(buffer);
 
       buffer.Position = 0;
+      FixWorkbookNamespaceDeclaration(buffer);
+
+      buffer.Position = 0;
       buffer.CopyTo(_stream);
     }
 
@@ -285,6 +288,50 @@ namespace SimpleExcelExporter
         using var writer = new StreamWriter(writerStream, new System.Text.UTF8Encoding(encoderShouldEmitUTF8Identifier: false));
         writer.Write(content);
       }
+    }
+
+    private static void FixWorkbookNamespaceDeclaration(MemoryStream buffer)
+    {
+      const string RelsNamespace = "http://schemas.openxmlformats.org/officeDocument/2006/relationships";
+      const string MainNamespace = "http://schemas.openxmlformats.org/spreadsheetml/2006/main";
+      var relsDeclaration = $" xmlns:r=\"{RelsNamespace}\"";
+
+      using var archive = new ZipArchive(buffer, ZipArchiveMode.Update, leaveOpen: true);
+      var entry = archive.GetEntry("xl/workbook.xml");
+      if (entry == null)
+      {
+        return;
+      }
+
+      string content;
+      using (var entryStream = entry.Open())
+      using (var reader = new StreamReader(entryStream, System.Text.Encoding.UTF8))
+      {
+        content = reader.ReadToEnd();
+      }
+
+      // If xmlns:r is already on <workbook>, nothing to do
+      var workbookTagEnd = content.IndexOf('>', content.IndexOf("<workbook", StringComparison.Ordinal));
+      var workbookTag = content.Substring(0, workbookTagEnd + 1);
+      if (workbookTag.Contains("xmlns:r=", StringComparison.Ordinal))
+      {
+        return;
+      }
+
+      // Remove xmlns:r declarations anywhere in the document
+      content = content.Replace(relsDeclaration, string.Empty, StringComparison.Ordinal);
+
+      // Add xmlns:r to the <workbook> element
+      content = content.Replace(
+        $"<workbook xmlns=\"{MainNamespace}\"",
+        $"<workbook xmlns:r=\"{RelsNamespace}\" xmlns=\"{MainNamespace}\"",
+        StringComparison.Ordinal);
+
+      entry.Delete();
+      var newEntry = archive.CreateEntry(entry.FullName);
+      using var writerStream = newEntry.Open();
+      using var writer = new StreamWriter(writerStream, new System.Text.UTF8Encoding(encoderShouldEmitUTF8Identifier: false));
+      writer.Write(content);
     }
 
     private static void GenerateWorksheetPartContent(
