@@ -19,6 +19,14 @@ namespace SimpleExcelExporter
 
   public partial class SpreadsheetWriter
   {
+    private const string ContentTypesNamespace = "http://schemas.openxmlformats.org/package/2006/content-types";
+
+    private const string PackageRelationshipsNamespace = "http://schemas.openxmlformats.org/package/2006/relationships";
+
+    private const string RelationshipsNamespace = "http://schemas.openxmlformats.org/officeDocument/2006/relationships";
+
+    private const string SpreadsheetMlNamespace = "http://schemas.openxmlformats.org/spreadsheetml/2006/main";
+
     private readonly Dictionary<string, Attribute?> _cachedAttributes = [];
 
     private readonly Dictionary<string, (CellDfn, bool)> _headers = [];
