@@ -137,12 +137,12 @@ namespace SimpleExcelExporter.Tests
 
       var workbookPart = spreadsheetDocument.WorkbookPart;
       var worksheetsPart = workbookPart!.WorksheetParts.First();
-      var sheetData = worksheetsPart.Worksheet.GetFirstChild<SheetData>();
+      var sheetData = worksheetsPart.Worksheet!.GetFirstChild<SheetData>();
       var rows = sheetData!.Descendants<Row>().ToList();
       var cells = rows[0].Descendants<Cell>();
 
       Assert.That(workbookPart.Workbook, Is.Not.Null);
-      Assert.That(workbookPart.Workbook.Sheets, Is.Not.Null);
+      Assert.That(workbookPart.Workbook!.Sheets, Is.Not.Null);
       Assert.That(expectedSheetsCount, Is.EqualTo(workbookPart.Workbook.Sheets!.Count()));
       Assert.That(expectedRowsCount, Is.EqualTo(rows.Count));
       Assert.That(expectedCellsCount, Is.EqualTo(cells.Count()));
