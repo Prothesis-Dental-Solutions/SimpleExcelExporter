@@ -481,12 +481,13 @@ namespace SimpleExcelExporter
       }
     }
 
-    private Cell CreateCell(CellDfn cellDfn)
+    private Cell CreateCell(CellDfn cellDfn, uint rowIndex, int columnIndex)
     {
       var stylIndex = CreateOrGetStylIndex(cellDfn);
 
       var cell = new Cell
       {
+        CellReference = $"{ColumnReferenceHelper.ToLetters(columnIndex)}{rowIndex}",
         StyleIndex = stylIndex,
       };
 
@@ -551,12 +552,14 @@ namespace SimpleExcelExporter
       return cell;
     }
 
-    private Row CreateHeaderRowForExcel(IEnumerable<CellDfn> columnHeadings)
+    private Row CreateHeaderRowForExcel(IEnumerable<CellDfn> columnHeadings, uint rowIndex)
     {
-      var row = new Row();
+      var row = new Row { RowIndex = rowIndex };
+      var columnIndex = 1;
       foreach (var cellDfn in columnHeadings)
       {
-        _ = row.AppendChild(CreateCell(cellDfn));
+        _ = row.AppendChild(CreateCell(cellDfn, rowIndex, columnIndex));
+        columnIndex++;
       }
 
       return row;
@@ -636,13 +639,14 @@ namespace SimpleExcelExporter
       }
     }
 
-    private Row GenerateRowForChildPartDetail(RowDfn rowDfn)
+    private Row GenerateRowForChildPartDetail(RowDfn rowDfn, uint rowIndex)
     {
-      var row = new Row();
-
+      var row = new Row { RowIndex = rowIndex };
+      var columnIndex = 1;
       foreach (var cellDfn in rowDfn.Cells)
       {
-        _ = row.AppendChild(CreateCell(cellDfn));
+        _ = row.AppendChild(CreateCell(cellDfn, rowIndex, columnIndex));
+        columnIndex++;
       }
 
       return row;
@@ -651,15 +655,18 @@ namespace SimpleExcelExporter
     private SheetData GenerateSheetDataForDetails(WorksheetDfn worksheet)
     {
       var sheetData1 = new SheetData();
+      var currentRowIndex = 1U;
       if (worksheet.ColumnHeadings.Cells.Count > 0)
       {
-        _ = sheetData1.AppendChild(CreateHeaderRowForExcel(worksheet.ColumnHeadings.Cells));
+        _ = sheetData1.AppendChild(CreateHeaderRowForExcel(worksheet.ColumnHeadings.Cells, currentRowIndex));
+        currentRowIndex++;
       }
 
       foreach (var row in worksheet.Rows)
       {
-        var partsRows = GenerateRowForChildPartDetail(row);
+        var partsRows = GenerateRowForChildPartDetail(row, currentRowIndex);
         _ = sheetData1.AppendChild(partsRows);
+        currentRowIndex++;
       }
 
       return sheetData1;
