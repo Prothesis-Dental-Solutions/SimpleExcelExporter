@@ -118,10 +118,18 @@ namespace SimpleExcelExporter
       rowDfn.Cells.Add(cellDfn);
     }
 
-    private static void GenerateWorksheetPartContent(WorksheetPart worksheetPart, SheetData sheetData, bool tabSelectedFlag)
+    private static void GenerateWorksheetPartContent(
+      WorksheetPart worksheetPart,
+      SheetData sheetData,
+      bool tabSelectedFlag,
+      int maxColumnCount,
+      uint lastRowIndex)
     {
       var worksheet = new Worksheet();
-      var sheetDimension = new SheetDimension { Reference = "A1" };
+      var reference = lastRowIndex == 0U || maxColumnCount == 0
+        ? "A1"
+        : $"A1:{ColumnReferenceHelper.ToLetters(maxColumnCount)}{lastRowIndex}";
+      var sheetDimension = new SheetDimension { Reference = reference };
 
       var sheetViews = new SheetViews();
 
@@ -633,8 +641,8 @@ namespace SimpleExcelExporter
         var worksheetPart = workbookPart.AddNewPart<WorksheetPart>();
         var sheet = new Sheet { Name = worksheet.Name, SheetId = count, Id = workbookPart.GetIdOfPart(worksheetPart) };
         _ = sheets.AppendChild(sheet);
-        var sheetData = GenerateSheetDataForDetails(worksheet);
-        GenerateWorksheetPartContent(worksheetPart, sheetData, count == 1U);
+        var (sheetData, maxColumnCount, lastRowIndex) = GenerateSheetDataForDetails(worksheet);
+        GenerateWorksheetPartContent(worksheetPart, sheetData, count == 1U, maxColumnCount, lastRowIndex);
         count++;
       }
     }
@@ -652,13 +660,16 @@ namespace SimpleExcelExporter
       return row;
     }
 
-    private SheetData GenerateSheetDataForDetails(WorksheetDfn worksheet)
+    private (SheetData SheetData, int MaxColumnCount, uint LastRowIndex) GenerateSheetDataForDetails(WorksheetDfn worksheet)
     {
       var sheetData1 = new SheetData();
       var currentRowIndex = 1U;
+      var maxColumnCount = 0;
+
       if (worksheet.ColumnHeadings.Cells.Count > 0)
       {
         _ = sheetData1.AppendChild(CreateHeaderRowForExcel(worksheet.ColumnHeadings.Cells, currentRowIndex));
+        maxColumnCount = worksheet.ColumnHeadings.Cells.Count;
         currentRowIndex++;
       }
 
@@ -666,10 +677,16 @@ namespace SimpleExcelExporter
       {
         var partsRows = GenerateRowForChildPartDetail(row, currentRowIndex);
         _ = sheetData1.AppendChild(partsRows);
+        if (row.Cells.Count > maxColumnCount)
+        {
+          maxColumnCount = row.Cells.Count;
+        }
+
         currentRowIndex++;
       }
 
-      return sheetData1;
+      var lastRowIndex = currentRowIndex - 1U;
+      return (sheetData1, maxColumnCount, lastRowIndex);
     }
 
     private void GenerateWorkbookStylesPartContent(WorkbookStylesPart workbookStylesPart)
