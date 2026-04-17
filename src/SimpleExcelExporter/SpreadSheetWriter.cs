@@ -63,7 +63,18 @@ namespace SimpleExcelExporter
         var coreFilePropPart = document.AddCoreFilePropertiesPart();
         using (var writer = new XmlTextWriter(coreFilePropPart.GetStream(FileMode.Create), System.Text.Encoding.UTF8))
         {
-          writer.WriteRaw("<?xml version=\"1.0\" encoding=\"UTF-8\"?>\r\n<cp:coreProperties xmlns:cp=\"http://schemas.openxmlformats.org/package/2006/metadata/core-properties\"></cp:coreProperties>");
+          var nowIso = DateTime.UtcNow.ToString("yyyy-MM-ddTHH:mm:ssZ", CultureInfo.InvariantCulture);
+          writer.WriteRaw(
+            $"<?xml version=\"1.0\" encoding=\"UTF-8\"?>\r\n" +
+            "<cp:coreProperties " +
+            "xmlns:cp=\"http://schemas.openxmlformats.org/package/2006/metadata/core-properties\" " +
+            "xmlns:dc=\"http://purl.org/dc/elements/1.1/\" " +
+            "xmlns:dcterms=\"http://purl.org/dc/terms/\" " +
+            "xmlns:xsi=\"http://www.w3.org/2001/XMLSchema-instance\">" +
+            "<dc:creator>SimpleExcelExporter</dc:creator>" +
+            $"<dcterms:created xsi:type=\"dcterms:W3CDTF\">{nowIso}</dcterms:created>" +
+            $"<dcterms:modified xsi:type=\"dcterms:W3CDTF\">{nowIso}</dcterms:modified>" +
+            "</cp:coreProperties>");
           writer.Flush();
         }
 
