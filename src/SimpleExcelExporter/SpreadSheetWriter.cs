@@ -101,6 +101,12 @@ namespace SimpleExcelExporter
     [GeneratedRegex("Target=\"/([^\"]+)\"")]
     private static partial Regex AbsoluteTargetRegex();
 
+    [GeneratedRegex("Id=\"R[0-9a-fA-F]{16}\"")]
+    private static partial Regex GuidIdRegex();
+
+    [GeneratedRegex("Id=\"rId(\\d+)\"")]
+    private static partial Regex ExistingRelIdRegex();
+
     private static CellDfn AddHeaderCellToWorkSheet(WorksheetDfn worksheetDfn, string text, List<int> index)
     {
       var headerCellDfn = new CellDfn(text, index: index);
@@ -280,6 +286,24 @@ namespace SimpleExcelExporter
           }
 
           return $"Target=\"{absTarget}\"";
+        });
+
+        // Normalize SDK-generated GUID-style IDs (Id="R<16 hex>") to sequential rIdN
+        var maxExistingId = 0;
+        foreach (Match existing in ExistingRelIdRegex().Matches(content))
+        {
+          var num = int.Parse(existing.Groups[1].Value, System.Globalization.CultureInfo.InvariantCulture);
+          if (num > maxExistingId)
+          {
+            maxExistingId = num;
+          }
+        }
+
+        var nextId = maxExistingId;
+        content = GuidIdRegex().Replace(content, _ =>
+        {
+          nextId++;
+          return $"Id=\"rId{nextId}\"";
         });
 
         entry.Delete();
