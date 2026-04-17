@@ -7,6 +7,7 @@ namespace SimpleExcelExporter
   using System.IO.Compression;
   using System.Linq;
   using System.Reflection;
+  using System.Text.RegularExpressions;
   using System.Xml;
   using System.Xml.Linq;
   using DocumentFormat.OpenXml;
@@ -16,7 +17,7 @@ namespace SimpleExcelExporter
   using SimpleExcelExporter.Definitions;
   using SimpleExcelExporter.Resources;
 
-  public class SpreadsheetWriter
+  public partial class SpreadsheetWriter
   {
     private readonly Dictionary<string, Attribute?> _cachedAttributes = [];
 
@@ -88,8 +89,14 @@ namespace SimpleExcelExporter
       FixNamespacePrefixes(buffer);
 
       buffer.Position = 0;
+      FixRelationshipTargets(buffer);
+
+      buffer.Position = 0;
       buffer.CopyTo(_stream);
     }
+
+    [GeneratedRegex("Target=\"/([^\"]+)\"")]
+    private static partial Regex AbsoluteTargetRegex();
 
     private static CellDfn AddHeaderCellToWorkSheet(WorksheetDfn worksheetDfn, string text, List<int> index)
     {
@@ -229,6 +236,48 @@ namespace SimpleExcelExporter
           .Replace(prefixedDeclaration, defaultDeclaration, StringComparison.Ordinal)
           .Replace("<x:", "<", StringComparison.Ordinal)
           .Replace("</x:", "</", StringComparison.Ordinal);
+
+        entry.Delete();
+        var newEntry = archive.CreateEntry(entry.FullName);
+        using var writerStream = newEntry.Open();
+        using var writer = new StreamWriter(writerStream, new System.Text.UTF8Encoding(encoderShouldEmitUTF8Identifier: false));
+        writer.Write(content);
+      }
+    }
+
+    private static void FixRelationshipTargets(MemoryStream buffer)
+    {
+      using var archive = new ZipArchive(buffer, ZipArchiveMode.Update, leaveOpen: true);
+
+      var relsEntries = archive.Entries
+        .Where(e => e.FullName.EndsWith(".rels", StringComparison.Ordinal))
+        .ToList();
+
+      foreach (var entry in relsEntries)
+      {
+        string content;
+        using (var entryStream = entry.Open())
+        using (var reader = new StreamReader(entryStream, System.Text.Encoding.UTF8))
+        {
+          content = reader.ReadToEnd();
+        }
+
+        // Compute base directory: for "_rels/.rels" base is ""; for "xl/_rels/workbook.xml.rels" base is "xl/"
+        var relsIndex = entry.FullName.LastIndexOf("_rels/", StringComparison.Ordinal);
+        var baseDir = relsIndex == 0 ? string.Empty : entry.FullName.Substring(0, relsIndex);
+
+        // Transform absolute targets to relative
+        // Strategy: replace Target="/x/y/z" with the part relative to baseDir
+        content = AbsoluteTargetRegex().Replace(content, match =>
+        {
+          var absTarget = match.Groups[1].Value;
+          if (baseDir.Length > 0 && absTarget.StartsWith(baseDir, StringComparison.Ordinal))
+          {
+            return $"Target=\"{absTarget.Substring(baseDir.Length)}\"";
+          }
+
+          return $"Target=\"{absTarget}\"";
+        });
 
         entry.Delete();
         var newEntry = archive.CreateEntry(entry.FullName);
