@@ -50,10 +50,11 @@ namespace SimpleExcelExporter.Tests
       var sheetXml = LoadSheetXml();
       var ns = XNamespace.Get(SpreadsheetMlNamespace);
 
-      // Fixture FirstFirstWithCollections: 7 columns (A..G), 1 header row + 3 data rows = A1:G4
+      // Fixture FirstFirstWithCollections: header has 7 columns (A..G) but row3 has 8 cells (A..H).
+      // maxColumnCount = max(7, 7, 7, 8) = 8 → used range is A1:H4.
       var dimension = sheetXml.Descendants(ns + "dimension").SingleOrDefault();
       Assert.That(dimension, Is.Not.Null, "Expected a <dimension> element in the worksheet");
-      Assert.That(dimension!.Attribute("ref")?.Value, Is.EqualTo("A1:G4"));
+      Assert.That(dimension!.Attribute("ref")?.Value, Is.EqualTo("A1:H4"));
     }
 
     [Test]
