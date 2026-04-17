@@ -813,6 +813,9 @@ namespace SimpleExcelExporter
 
     private void GenerateWorkbookStylesPartContent(WorkbookStylesPart workbookStylesPart)
     {
+      // Number formats (empty — using built-in formats only)
+      var numberingFormats = new NumberingFormats { Count = 0U };
+
       var fonts = new Fonts { Count = 1U };
 
       // Font 1
@@ -851,11 +854,26 @@ namespace SimpleExcelExporter
       // CellFormats
       var cellFormats = new CellFormats { Count = 0U };
 
+      // CellStyles — Excel requires the "Normal" built-in style
+      var cellStyles = new CellStyles { Count = 1U };
+      _ = cellStyles.AppendChild(new CellStyle { Name = "Normal", FormatId = 0U, BuiltinId = 0U });
+
+      // TableStyles — empty but required by strict parsers
+      var tableStyles = new TableStyles
+      {
+        Count = 0U,
+        DefaultTableStyle = "TableStyleMedium9",
+        DefaultPivotStyle = "PivotStyleLight16",
+      };
+
+      _ = _stylesheet.AppendChild(numberingFormats);
       _ = _stylesheet.AppendChild(fonts);
       _ = _stylesheet.AppendChild(fills);
       _ = _stylesheet.AppendChild(borders);
       _ = _stylesheet.AppendChild(cellStyleFormats);
       _ = _stylesheet.AppendChild(cellFormats);
+      _ = _stylesheet.AppendChild(cellStyles);
+      _ = _stylesheet.AppendChild(tableStyles);
 
       workbookStylesPart.Stylesheet = _stylesheet;
     }
