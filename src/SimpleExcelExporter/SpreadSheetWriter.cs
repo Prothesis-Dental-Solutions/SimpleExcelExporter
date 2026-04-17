@@ -603,6 +603,71 @@ namespace SimpleExcelExporter
       }
     }
 
+    private void BuildStylesheetSkeleton()
+    {
+      // Number formats (empty — using built-in formats only)
+      var numberingFormats = new NumberingFormats { Count = 0U };
+
+      var fonts = new Fonts { Count = 1U };
+
+      // Font 1
+      var font = new Font
+      {
+        FontSize = new FontSize { Val = 11D },
+        FontName = new FontName { Val = "Calibri" },
+        FontFamilyNumbering = new FontFamilyNumbering { Val = 2 },
+        FontScheme = new FontScheme { Val = FontSchemeValues.Minor },
+      };
+
+      _ = fonts.AppendChild(font);
+
+      // Default Fill
+      var fills = new Fills { Count = 1U };
+      var fill = new Fill { PatternFill = new PatternFill { PatternType = PatternValues.None } };
+      _ = fills.AppendChild(fill);
+
+      // Default Border
+      var borders = new Borders { Count = 1U };
+      var border = new Border
+      {
+        LeftBorder = new LeftBorder(),
+        RightBorder = new RightBorder(),
+        TopBorder = new TopBorder(),
+        BottomBorder = new BottomBorder(),
+        DiagonalBorder = new DiagonalBorder(),
+      };
+      _ = borders.AppendChild(border);
+
+      // CellStyleFormats
+      var cellStyleFormats = new CellStyleFormats { Count = 1U };
+      var cellFormat = new CellFormat { NumberFormatId = 0U, FontId = 0U, FillId = 0U, BorderId = 0U };
+      _ = cellStyleFormats.AppendChild(cellFormat);
+
+      // CellFormats — empty, populated by CreateOrGetStylIndex during worksheet processing
+      var cellFormats = new CellFormats { Count = 0U };
+
+      // CellStyles — Excel requires the "Normal" built-in style
+      var cellStyles = new CellStyles { Count = 1U };
+      _ = cellStyles.AppendChild(new CellStyle { Name = "Normal", FormatId = 0U, BuiltinId = 0U });
+
+      // TableStyles — empty but required by strict parsers
+      var tableStyles = new TableStyles
+      {
+        Count = 0U,
+        DefaultTableStyle = "TableStyleMedium9",
+        DefaultPivotStyle = "PivotStyleLight16",
+      };
+
+      _ = _stylesheet.AppendChild(numberingFormats);
+      _ = _stylesheet.AppendChild(fonts);
+      _ = _stylesheet.AppendChild(fills);
+      _ = _stylesheet.AppendChild(borders);
+      _ = _stylesheet.AppendChild(cellStyleFormats);
+      _ = _stylesheet.AppendChild(cellFormats);
+      _ = _stylesheet.AppendChild(cellStyles);
+      _ = _stylesheet.AppendChild(tableStyles);
+    }
+
     private string? BuildText(PropertyInfo playerTypePropertyInfo, Type currentPlayerType, object? currentPlayer)
     {
       var headerAttribute = GetAttributeFrom<HeaderAttribute>(playerTypePropertyInfo);
@@ -1165,6 +1230,58 @@ namespace SimpleExcelExporter
       writer.WriteEndDocument();
     }
 
+    private void WriteStyles(ZipArchive archive)
+    {
+      var entry = archive.CreateEntry("xl/styles.xml", CompressionLevel.Optimal);
+      using var stream = entry.Open();
+      using var writer = OpenXmlWriter.Create(stream, Encoding.UTF8);
+
+      writer.WriteStartDocument(standalone: true);
+      writer.WriteElement(_stylesheet);
+    }
+
+    private void WriteWorkbook(ZipArchive archive)
+    {
+      var entry = archive.CreateEntry("xl/workbook.xml", CompressionLevel.Optimal);
+      using var stream = entry.Open();
+      using var writer = OpenXmlWriter.Create(stream, Encoding.UTF8);
+
+      var workbook = new Workbook();
+      workbook.Append(new BookViews(new WorkbookView()));
+
+      var sheets = new Sheets();
+      _ = workbook.AppendChild(sheets);
+
+      var sheetId = 1U;
+      var rId = 2;
+      foreach (var worksheet in _workbookDfn.Worksheets)
+      {
+        _ = sheets.AppendChild(new Sheet
+        {
+          Name = worksheet.Name,
+          SheetId = sheetId,
+          Id = $"rId{rId}",
+        });
+        sheetId++;
+        rId++;
+      }
+
+      writer.WriteStartDocument(standalone: true);
+
+      var namespaceDeclarations = new List<KeyValuePair<string, string>>
+      {
+        new("r", RelationshipsNamespace),
+      };
+
+      writer.WriteStartElement(workbook, Array.Empty<OpenXmlAttribute>(), namespaceDeclarations);
+      foreach (var child in workbook.ChildElements)
+      {
+        writer.WriteElement(child);
+      }
+
+      writer.WriteEndElement();
+    }
+
     private void WriteWorkbookRels(ZipArchive archive)
     {
       var entry = archive.CreateEntry("xl/_rels/workbook.xml.rels", CompressionLevel.Optimal);
@@ -1198,6 +1315,45 @@ namespace SimpleExcelExporter
 
       writer.WriteEndElement();
       writer.WriteEndDocument();
+    }
+
+    private void WriteWorksheets(ZipArchive archive)
+    {
+      var count = 1U;
+      foreach (var worksheet in _workbookDfn.Worksheets)
+      {
+        var entry = archive.CreateEntry($"xl/worksheets/sheet{count}.xml", CompressionLevel.Optimal);
+        using var stream = entry.Open();
+        using var writer = OpenXmlWriter.Create(stream, Encoding.UTF8);
+
+        var (sheetData, maxColumnCount, lastRowIndex) = GenerateSheetDataForDetails(worksheet);
+
+        var reference = lastRowIndex == 0U || maxColumnCount == 0
+          ? "A1"
+          : $"A1:{ColumnReferenceHelper.ToLetters(maxColumnCount)}{lastRowIndex}";
+        var sheetDimension = new SheetDimension { Reference = reference };
+
+        var sheetViews = new SheetViews();
+        var sheetView = new SheetView { TabSelected = count == 1U, WorkbookViewId = 0U };
+        var selection = new Selection { ActiveCell = "A1", SequenceOfReferences = new ListValue<StringValue> { InnerText = "A1" } };
+        _ = sheetView.AppendChild(selection);
+        _ = sheetViews.AppendChild(sheetView);
+
+        var sheetFormatProperties = new SheetFormatProperties { DefaultRowHeight = 15D, DefaultColumnWidth = 15D };
+        var pageMargins = new PageMargins { Left = 0.7D, Right = 0.7D, Top = 0.75D, Bottom = 0.75D, Header = 0.3D, Footer = 0.3D };
+
+        var worksheetElement = new Worksheet();
+        _ = worksheetElement.AppendChild(sheetDimension);
+        _ = worksheetElement.AppendChild(sheetViews);
+        _ = worksheetElement.AppendChild(sheetFormatProperties);
+        _ = worksheetElement.AppendChild(sheetData);
+        _ = worksheetElement.AppendChild(pageMargins);
+
+        writer.WriteStartDocument(standalone: true);
+        writer.WriteElement(worksheetElement);
+
+        count++;
+      }
     }
   }
 }
