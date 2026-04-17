@@ -3,6 +3,7 @@ namespace SimpleExcelExporter.Tests
   using System.IO;
   using System.IO.Compression;
   using System.Linq;
+  using System.Text;
   using System.Xml.Linq;
   using NUnit.Framework;
   using SimpleExcelExporter.Tests.Preparators.Definitions;
@@ -77,6 +78,48 @@ namespace SimpleExcelExporter.Tests
 
       var overrideForSheet1 = overrides.SingleOrDefault(o => (string?)o.Attribute("PartName") == "/xl/worksheets/sheet1.xml");
       Assert.That(overrideForSheet1, Is.Not.Null, "Expected a <Override> for /xl/worksheets/sheet1.xml");
+    }
+
+    [Test]
+    public void StringCells_UseInlineString_NotStr()
+    {
+      var sheetXml = LoadSheetXml();
+      var ns = XNamespace.Get(SpreadsheetMlNamespace);
+
+      var strCells = sheetXml.Descendants(ns + "c")
+        .Where(c => (string?)c.Attribute("t") == "str")
+        .ToList();
+      Assert.That(strCells, Is.Empty, "No cell should use t=\"str\" (reserved for formula results)");
+
+      var inlineStrCells = sheetXml.Descendants(ns + "c")
+        .Where(c => (string?)c.Attribute("t") == "inlineStr")
+        .ToList();
+      Assert.That(inlineStrCells, Is.Not.Empty, "String cells should use t=\"inlineStr\"");
+
+      // Verify inlineStr cells have <is><t>...</t></is> structure, not <v>
+      foreach (var cell in inlineStrCells)
+      {
+        var inlineString = cell.Element(ns + "is");
+        Assert.That(inlineString, Is.Not.Null, $"inlineStr cell {cell.Attribute("r")?.Value} must have <is> element");
+        var text = inlineString!.Element(ns + "t");
+        Assert.That(text, Is.Not.Null, $"inlineStr cell {cell.Attribute("r")?.Value} must have <is><t> element");
+        Assert.That(cell.Element(ns + "v"), Is.Null, $"inlineStr cell {cell.Attribute("r")?.Value} must NOT have <v> element");
+      }
+    }
+
+    [Test]
+    public void Worksheet_UsesDefaultNamespace()
+    {
+      using var archive = GenerateAndOpenXlsxArchive();
+      var entry = archive.GetEntry("xl/worksheets/sheet1.xml");
+      Assert.That(entry, Is.Not.Null, "Missing xl/worksheets/sheet1.xml");
+      using var stream = entry!.Open();
+      using var reader = new StreamReader(stream, Encoding.UTF8);
+      var content = reader.ReadToEnd();
+
+      Assert.That(content, Does.Not.Contain("xmlns:x="), "Worksheet should use default namespace, not x: prefix");
+      Assert.That(content, Does.Contain("xmlns=\"http://schemas.openxmlformats.org/spreadsheetml/2006/main\""), "Worksheet should declare SpreadsheetML namespace as default");
+      Assert.That(content, Does.Not.Contain("<x:"), "Worksheet should not use x: prefix on any element");
     }
 
     private static XDocument LoadContentTypesXml()
