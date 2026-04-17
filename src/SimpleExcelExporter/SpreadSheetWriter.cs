@@ -8,9 +8,7 @@ namespace SimpleExcelExporter
   using System.Linq;
   using System.Reflection;
   using System.Text;
-  using System.Text.RegularExpressions;
   using System.Xml;
-  using System.Xml.Linq;
   using DocumentFormat.OpenXml;
   using DocumentFormat.OpenXml.Packaging;
   using DocumentFormat.OpenXml.Spreadsheet;
@@ -18,7 +16,7 @@ namespace SimpleExcelExporter
   using SimpleExcelExporter.Definitions;
   using SimpleExcelExporter.Resources;
 
-  public partial class SpreadsheetWriter
+  public class SpreadsheetWriter
   {
     private const string ContentTypesNamespace = "http://schemas.openxmlformats.org/package/2006/content-types";
 
@@ -82,15 +80,6 @@ namespace SimpleExcelExporter
       WriteStyles(archive);
     }
 
-    [GeneratedRegex("Target=\"/([^\"]+)\"")]
-    private static partial Regex AbsoluteTargetRegex();
-
-    [GeneratedRegex("Id=\"R[0-9a-fA-F]{16}\"")]
-    private static partial Regex GuidIdRegex();
-
-    [GeneratedRegex("Id=\"rId(\\d+)\"")]
-    private static partial Regex ExistingRelIdRegex();
-
     private static CellDfn AddHeaderCellToWorkSheet(WorksheetDfn worksheetDfn, string text, List<int> index)
     {
       var headerCellDfn = new CellDfn(text, index: index);
@@ -141,237 +130,6 @@ namespace SimpleExcelExporter
       }
 
       rowDfn.Cells.Add(cellDfn);
-    }
-
-    private static void FixContentTypesXml(MemoryStream buffer)
-    {
-      using var archive = new ZipArchive(buffer, ZipArchiveMode.Update, leaveOpen: true);
-      var entry = archive.GetEntry("[Content_Types].xml");
-      if (entry == null)
-      {
-        return;
-      }
-
-      XDocument doc;
-      using (var entryStream = entry.Open())
-      {
-        doc = XDocument.Load(entryStream);
-      }
-
-      var ns = XNamespace.Get("http://schemas.openxmlformats.org/package/2006/content-types");
-      var root = doc.Root!;
-
-      var xmlDefault = root.Elements(ns + "Default")
-        .FirstOrDefault(d => (string?)d.Attribute("Extension") == "xml");
-
-      if (xmlDefault != null && (string?)xmlDefault.Attribute("ContentType") != "application/xml")
-      {
-        var displacedContentType = (string?)xmlDefault.Attribute("ContentType");
-        var displacedPartName = displacedContentType switch
-        {
-          "application/vnd.openxmlformats-package.core-properties+xml" => "/docProps/core.xml",
-          "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet.main+xml" => "/xl/workbook.xml",
-          _ => null,
-        };
-
-        if (displacedPartName != null)
-        {
-          var alreadyHasOverride = root.Elements(ns + "Override")
-            .Any(o => (string?)o.Attribute("PartName") == displacedPartName);
-
-          if (!alreadyHasOverride)
-          {
-            root.Add(new XElement(
-              ns + "Override",
-              new XAttribute("PartName", displacedPartName),
-              new XAttribute("ContentType", displacedContentType!)));
-          }
-        }
-
-        xmlDefault.SetAttributeValue("ContentType", "application/xml");
-      }
-
-      entry.Delete();
-      var newEntry = archive.CreateEntry("[Content_Types].xml");
-      using var entryWriter = new StreamWriter(newEntry.Open(), new System.Text.UTF8Encoding(encoderShouldEmitUTF8Identifier: false));
-      doc.Save(entryWriter);
-    }
-
-    private static void FixNamespacePrefixes(MemoryStream buffer)
-    {
-      const string SpreadsheetMlNamespace = "http://schemas.openxmlformats.org/spreadsheetml/2006/main";
-      var prefixedDeclaration = $"xmlns:x=\"{SpreadsheetMlNamespace}\"";
-      var defaultDeclaration = $"xmlns=\"{SpreadsheetMlNamespace}\"";
-
-      using var archive = new ZipArchive(buffer, ZipArchiveMode.Update, leaveOpen: true);
-
-      var entriesToFix = archive.Entries
-        .Where(e => e.FullName.StartsWith("xl/", StringComparison.Ordinal)
-          && e.FullName.EndsWith(".xml", StringComparison.Ordinal)
-          && !e.FullName.Contains("_rels/", StringComparison.Ordinal))
-        .ToList();
-
-      foreach (var entry in entriesToFix)
-      {
-        string content;
-        using (var entryStream = entry.Open())
-        using (var reader = new StreamReader(entryStream, System.Text.Encoding.UTF8))
-        {
-          content = reader.ReadToEnd();
-        }
-
-        if (!content.Contains(prefixedDeclaration, StringComparison.Ordinal))
-        {
-          continue;
-        }
-
-        content = content
-          .Replace(prefixedDeclaration, defaultDeclaration, StringComparison.Ordinal)
-          .Replace("<x:", "<", StringComparison.Ordinal)
-          .Replace("</x:", "</", StringComparison.Ordinal);
-
-        entry.Delete();
-        var newEntry = archive.CreateEntry(entry.FullName);
-        using var writerStream = newEntry.Open();
-        using var writer = new StreamWriter(writerStream, new System.Text.UTF8Encoding(encoderShouldEmitUTF8Identifier: false));
-        writer.Write(content);
-      }
-    }
-
-    private static void FixRelationshipTargets(MemoryStream buffer)
-    {
-      using var archive = new ZipArchive(buffer, ZipArchiveMode.Update, leaveOpen: true);
-
-      var relsEntries = archive.Entries
-        .Where(e => e.FullName.EndsWith(".rels", StringComparison.Ordinal))
-        .ToList();
-
-      foreach (var entry in relsEntries)
-      {
-        string content;
-        using (var entryStream = entry.Open())
-        using (var reader = new StreamReader(entryStream, System.Text.Encoding.UTF8))
-        {
-          content = reader.ReadToEnd();
-        }
-
-        // Compute base directory: for "_rels/.rels" base is ""; for "xl/_rels/workbook.xml.rels" base is "xl/"
-        var relsIndex = entry.FullName.LastIndexOf("_rels/", StringComparison.Ordinal);
-        var baseDir = relsIndex == 0 ? string.Empty : entry.FullName.Substring(0, relsIndex);
-
-        // Transform absolute targets to relative
-        // Strategy: replace Target="/x/y/z" with the part relative to baseDir
-        content = AbsoluteTargetRegex().Replace(content, match =>
-        {
-          var absTarget = match.Groups[1].Value;
-          if (baseDir.Length > 0 && absTarget.StartsWith(baseDir, StringComparison.Ordinal))
-          {
-            return $"Target=\"{absTarget.Substring(baseDir.Length)}\"";
-          }
-
-          return $"Target=\"{absTarget}\"";
-        });
-
-        // Normalize SDK-generated GUID-style IDs (Id="R<16 hex>") to sequential rIdN
-        var maxExistingId = 0;
-        foreach (Match existing in ExistingRelIdRegex().Matches(content))
-        {
-          var num = int.Parse(existing.Groups[1].Value, System.Globalization.CultureInfo.InvariantCulture);
-          if (num > maxExistingId)
-          {
-            maxExistingId = num;
-          }
-        }
-
-        var nextId = maxExistingId;
-        content = GuidIdRegex().Replace(content, _ =>
-        {
-          nextId++;
-          return $"Id=\"rId{nextId}\"";
-        });
-
-        entry.Delete();
-        var newEntry = archive.CreateEntry(entry.FullName);
-        using var writerStream = newEntry.Open();
-        using var writer = new StreamWriter(writerStream, new System.Text.UTF8Encoding(encoderShouldEmitUTF8Identifier: false));
-        writer.Write(content);
-      }
-    }
-
-    private static void FixWorkbookNamespaceDeclaration(MemoryStream buffer)
-    {
-      const string RelsNamespace = "http://schemas.openxmlformats.org/officeDocument/2006/relationships";
-      const string MainNamespace = "http://schemas.openxmlformats.org/spreadsheetml/2006/main";
-      var relsDeclaration = $" xmlns:r=\"{RelsNamespace}\"";
-
-      using var archive = new ZipArchive(buffer, ZipArchiveMode.Update, leaveOpen: true);
-      var entry = archive.GetEntry("xl/workbook.xml");
-      if (entry == null)
-      {
-        return;
-      }
-
-      string content;
-      using (var entryStream = entry.Open())
-      using (var reader = new StreamReader(entryStream, System.Text.Encoding.UTF8))
-      {
-        content = reader.ReadToEnd();
-      }
-
-      // If xmlns:r is already on <workbook>, nothing to do
-      var workbookTagEnd = content.IndexOf('>', content.IndexOf("<workbook", StringComparison.Ordinal));
-      var workbookTag = content.Substring(0, workbookTagEnd + 1);
-      if (workbookTag.Contains("xmlns:r=", StringComparison.Ordinal))
-      {
-        return;
-      }
-
-      // Remove xmlns:r declarations anywhere in the document
-      content = content.Replace(relsDeclaration, string.Empty, StringComparison.Ordinal);
-
-      // Add xmlns:r to the <workbook> element
-      content = content.Replace(
-        $"<workbook xmlns=\"{MainNamespace}\"",
-        $"<workbook xmlns:r=\"{RelsNamespace}\" xmlns=\"{MainNamespace}\"",
-        StringComparison.Ordinal);
-
-      entry.Delete();
-      var newEntry = archive.CreateEntry(entry.FullName);
-      using var writerStream = newEntry.Open();
-      using var writer = new StreamWriter(writerStream, new System.Text.UTF8Encoding(encoderShouldEmitUTF8Identifier: false));
-      writer.Write(content);
-    }
-
-    private static void GenerateWorksheetPartContent(
-      WorksheetPart worksheetPart,
-      SheetData sheetData,
-      bool tabSelectedFlag,
-      int maxColumnCount,
-      uint lastRowIndex)
-    {
-      var worksheet = new Worksheet();
-      var reference = lastRowIndex == 0U || maxColumnCount == 0
-        ? "A1"
-        : $"A1:{ColumnReferenceHelper.ToLetters(maxColumnCount)}{lastRowIndex}";
-      var sheetDimension = new SheetDimension { Reference = reference };
-
-      var sheetViews = new SheetViews();
-
-      var sheetView = new SheetView { TabSelected = tabSelectedFlag, WorkbookViewId = 0U };
-      var selection = new Selection { ActiveCell = "A1", SequenceOfReferences = new ListValue<StringValue> { InnerText = "A1" } };
-
-      _ = sheetView.AppendChild(selection);
-
-      _ = sheetViews.AppendChild(sheetView);
-      var sheetFormatProperties = new SheetFormatProperties { DefaultRowHeight = 15D, DefaultColumnWidth = 15D };
-
-      var pageMargins = new PageMargins { Left = 0.7D, Right = 0.7D, Top = 0.75D, Bottom = 0.75D, Header = 0.3D, Footer = 0.3D };
-      _ = worksheet.AppendChild(sheetDimension);
-      _ = worksheet.AppendChild(sheetViews);
-      _ = worksheet.AppendChild(sheetFormatProperties);
-      _ = worksheet.AppendChild(sheetData);
-      _ = worksheet.AppendChild(pageMargins);
-      worksheetPart.Worksheet = worksheet;
     }
 
     private static List<int> ManageIndex(int iteration, List<int>? parentIndex, IndexAttribute? indexAttribute)
@@ -1021,32 +779,6 @@ namespace SimpleExcelExporter
       return index;
     }
 
-    private void CreatePartsForExcel(SpreadsheetDocument document)
-    {
-      var workbookPart = document.AddWorkbookPart();
-      var workbook = new Workbook();
-      workbook.Append(new BookViews(new WorkbookView()));
-      workbookPart.Workbook = workbook;
-      var sheets = new Sheets();
-      _ = workbook.AppendChild(sheets);
-
-      // Styles first, then worksheets — rId2 reserved for styles, rId3+ for sheets
-      var workbookStylesPart1 = workbookPart.AddNewPart<WorkbookStylesPart>("rId2");
-      GenerateWorkbookStylesPartContent(workbookStylesPart1);
-
-      // Thank you https://stackoverflow.com/questions/9120544/openxml-multiple-sheets
-      var count = 1U;
-      foreach (var worksheet in _workbookDfn.Worksheets)
-      {
-        var worksheetPart = workbookPart.AddNewPart<WorksheetPart>($"rId{count + 2}");  // rId3, rId4, ...
-        var sheet = new Sheet { Name = worksheet.Name, SheetId = count, Id = workbookPart.GetIdOfPart(worksheetPart) };
-        _ = sheets.AppendChild(sheet);
-        var (sheetData, maxColumnCount, lastRowIndex) = GenerateSheetDataForDetails(worksheet);
-        GenerateWorksheetPartContent(worksheetPart, sheetData, count == 1U, maxColumnCount, lastRowIndex);
-        count++;
-      }
-    }
-
     private Row GenerateRowForChildPartDetail(RowDfn rowDfn, uint rowIndex)
     {
       var row = new Row { RowIndex = rowIndex };
@@ -1087,73 +819,6 @@ namespace SimpleExcelExporter
 
       var lastRowIndex = currentRowIndex - 1U;
       return (sheetData1, maxColumnCount, lastRowIndex);
-    }
-
-    private void GenerateWorkbookStylesPartContent(WorkbookStylesPart workbookStylesPart)
-    {
-      // Number formats (empty — using built-in formats only)
-      var numberingFormats = new NumberingFormats { Count = 0U };
-
-      var fonts = new Fonts { Count = 1U };
-
-      // Font 1
-      var font = new Font
-      {
-        FontSize = new FontSize { Val = 11D },
-        FontName = new FontName { Val = "Calibri" },
-        FontFamilyNumbering = new FontFamilyNumbering { Val = 2 },
-        FontScheme = new FontScheme { Val = FontSchemeValues.Minor },
-      };
-
-      _ = fonts.AppendChild(font);
-
-      // Default Fill
-      var fills = new Fills { Count = 1U };
-      var fill = new Fill { PatternFill = new PatternFill { PatternType = PatternValues.None } };
-      _ = fills.AppendChild(fill);
-
-      // Default Border
-      var borders = new Borders { Count = 1U };
-      var border = new Border
-      {
-        LeftBorder = new LeftBorder(),
-        RightBorder = new RightBorder(),
-        TopBorder = new TopBorder(),
-        BottomBorder = new BottomBorder(),
-        DiagonalBorder = new DiagonalBorder(),
-      };
-      _ = borders.AppendChild(border);
-
-      // CellStyleFormats
-      var cellStyleFormats = new CellStyleFormats { Count = 1U };
-      var cellFormat = new CellFormat { NumberFormatId = 0U, FontId = 0U, FillId = 0U, BorderId = 0U };
-      _ = cellStyleFormats.AppendChild(cellFormat);
-
-      // CellFormats
-      var cellFormats = new CellFormats { Count = 0U };
-
-      // CellStyles — Excel requires the "Normal" built-in style
-      var cellStyles = new CellStyles { Count = 1U };
-      _ = cellStyles.AppendChild(new CellStyle { Name = "Normal", FormatId = 0U, BuiltinId = 0U });
-
-      // TableStyles — empty but required by strict parsers
-      var tableStyles = new TableStyles
-      {
-        Count = 0U,
-        DefaultTableStyle = "TableStyleMedium9",
-        DefaultPivotStyle = "PivotStyleLight16",
-      };
-
-      _ = _stylesheet.AppendChild(numberingFormats);
-      _ = _stylesheet.AppendChild(fonts);
-      _ = _stylesheet.AppendChild(fills);
-      _ = _stylesheet.AppendChild(borders);
-      _ = _stylesheet.AppendChild(cellStyleFormats);
-      _ = _stylesheet.AppendChild(cellFormats);
-      _ = _stylesheet.AppendChild(cellStyles);
-      _ = _stylesheet.AppendChild(tableStyles);
-
-      workbookStylesPart.Stylesheet = _stylesheet;
     }
 
     private T? GetAttributeFrom<T>(PropertyInfo propertyInfo)
