@@ -566,8 +566,8 @@ namespace SimpleExcelExporter
 
       if (cellDfn.Value == null)
       {
-        cell.CellValue = new CellValue(string.Empty);
-        cell.DataType = new EnumValue<CellValues>(CellValues.String);
+        cell.InlineString = new InlineString { Text = new Text(string.Empty) };
+        cell.DataType = new EnumValue<CellValues>(CellValues.InlineString);
       }
       else if (cellDfn.Value is DateTime dateTimeValue)
       {
@@ -608,8 +608,8 @@ namespace SimpleExcelExporter
       else if (cellDfn.Value is string stringValue)
       {
         stringValue = XmlStringHelper.Sanitize(stringValue);
-        cell.CellValue = new CellValue(stringValue);
-        cell.DataType = new EnumValue<CellValues>(CellValues.String);
+        cell.InlineString = new InlineString { Text = new Text(stringValue) };
+        cell.DataType = new EnumValue<CellValues>(CellValues.InlineString);
       }
       else if (cellDfn.Value is TimeSpan timeSpanValue)
       {
