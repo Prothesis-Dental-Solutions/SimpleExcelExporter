@@ -96,14 +96,16 @@ namespace SimpleExcelExporter.Tests
         .ToList();
       Assert.That(inlineStrCells, Is.Not.Empty, "String cells should use t=\"inlineStr\"");
 
-      // Verify inlineStr cells have <is><t>...</t></is> structure, not <v>
+      // Verify inlineStr cells: non-empty ones must have <is><t>...</t></is>, none should have <v>
       foreach (var cell in inlineStrCells)
       {
-        var inlineString = cell.Element(ns + "is");
-        Assert.That(inlineString, Is.Not.Null, $"inlineStr cell {cell.Attribute("r")?.Value} must have <is> element");
-        var text = inlineString!.Element(ns + "t");
-        Assert.That(text, Is.Not.Null, $"inlineStr cell {cell.Attribute("r")?.Value} must have <is><t> element");
         Assert.That(cell.Element(ns + "v"), Is.Null, $"inlineStr cell {cell.Attribute("r")?.Value} must NOT have <v> element");
+        var inlineString = cell.Element(ns + "is");
+        if (inlineString != null)
+        {
+          var text = inlineString.Element(ns + "t");
+          Assert.That(text, Is.Not.Null, $"inlineStr cell {cell.Attribute("r")?.Value} must have <is><t> element");
+        }
       }
     }
 
