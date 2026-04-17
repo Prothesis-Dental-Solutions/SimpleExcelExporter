@@ -74,6 +74,9 @@ namespace SimpleExcelExporter
       FixContentTypesXml(buffer);
 
       buffer.Position = 0;
+      FixNamespacePrefixes(buffer);
+
+      buffer.Position = 0;
       buffer.CopyTo(_stream);
     }
 
@@ -181,6 +184,47 @@ namespace SimpleExcelExporter
       var newEntry = archive.CreateEntry("[Content_Types].xml");
       using var entryWriter = new StreamWriter(newEntry.Open(), new System.Text.UTF8Encoding(encoderShouldEmitUTF8Identifier: false));
       doc.Save(entryWriter);
+    }
+
+    private static void FixNamespacePrefixes(MemoryStream buffer)
+    {
+      const string SpreadsheetMlNamespace = "http://schemas.openxmlformats.org/spreadsheetml/2006/main";
+      var prefixedDeclaration = $"xmlns:x=\"{SpreadsheetMlNamespace}\"";
+      var defaultDeclaration = $"xmlns=\"{SpreadsheetMlNamespace}\"";
+
+      using var archive = new ZipArchive(buffer, ZipArchiveMode.Update, leaveOpen: true);
+
+      var entriesToFix = archive.Entries
+        .Where(e => e.FullName.StartsWith("xl/", StringComparison.Ordinal)
+          && e.FullName.EndsWith(".xml", StringComparison.Ordinal)
+          && !e.FullName.Contains("_rels/", StringComparison.Ordinal))
+        .ToList();
+
+      foreach (var entry in entriesToFix)
+      {
+        string content;
+        using (var entryStream = entry.Open())
+        using (var reader = new StreamReader(entryStream, System.Text.Encoding.UTF8))
+        {
+          content = reader.ReadToEnd();
+        }
+
+        if (!content.Contains(prefixedDeclaration, StringComparison.Ordinal))
+        {
+          continue;
+        }
+
+        content = content
+          .Replace(prefixedDeclaration, defaultDeclaration, StringComparison.Ordinal)
+          .Replace("<x:", "<", StringComparison.Ordinal)
+          .Replace("</x:", "</", StringComparison.Ordinal);
+
+        entry.Delete();
+        var newEntry = archive.CreateEntry(entry.FullName);
+        using var writerStream = newEntry.Open();
+        using var writer = new StreamWriter(writerStream, new System.Text.UTF8Encoding(encoderShouldEmitUTF8Identifier: false));
+        writer.Write(content);
+      }
     }
 
     private static void GenerateWorksheetPartContent(
