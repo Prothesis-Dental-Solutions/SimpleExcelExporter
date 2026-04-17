@@ -7,6 +7,7 @@ namespace SimpleExcelExporter
   using System.IO.Compression;
   using System.Linq;
   using System.Reflection;
+  using System.Text;
   using System.Text.RegularExpressions;
   using System.Xml;
   using System.Xml.Linq;
@@ -413,6 +414,23 @@ namespace SimpleExcelExporter
       }
 
       return index;
+    }
+
+    private static void WriteOverride(XmlWriter writer, string partName, string contentType)
+    {
+      writer.WriteStartElement("Override", ContentTypesNamespace);
+      writer.WriteAttributeString("PartName", partName);
+      writer.WriteAttributeString("ContentType", contentType);
+      writer.WriteEndElement();
+    }
+
+    private static void WriteRelationship(XmlWriter writer, string id, string type, string target)
+    {
+      writer.WriteStartElement("Relationship", PackageRelationshipsNamespace);
+      writer.WriteAttributeString("Id", id);
+      writer.WriteAttributeString("Type", type);
+      writer.WriteAttributeString("Target", target);
+      writer.WriteEndElement();
     }
 
     private void AddCellsToRowFromObjectPropertyInfos(
@@ -1057,6 +1075,129 @@ namespace SimpleExcelExporter
       {
         throw new DefinitionException("WorkBook could not be null or empty.");
       }
+    }
+
+    private void WriteContentTypes(ZipArchive archive)
+    {
+      var entry = archive.CreateEntry("[Content_Types].xml", CompressionLevel.Optimal);
+      using var stream = entry.Open();
+      var settings = new XmlWriterSettings
+      {
+        Encoding = new UTF8Encoding(encoderShouldEmitUTF8Identifier: false),
+        CloseOutput = false,
+      };
+      using var writer = XmlWriter.Create(stream, settings);
+
+      writer.WriteStartDocument(standalone: true);
+      writer.WriteStartElement("Types", ContentTypesNamespace);
+
+      writer.WriteStartElement("Default", ContentTypesNamespace);
+      writer.WriteAttributeString("Extension", "xml");
+      writer.WriteAttributeString("ContentType", "application/xml");
+      writer.WriteEndElement();
+
+      writer.WriteStartElement("Default", ContentTypesNamespace);
+      writer.WriteAttributeString("Extension", "rels");
+      writer.WriteAttributeString("ContentType", "application/vnd.openxmlformats-package.relationships+xml");
+      writer.WriteEndElement();
+
+      WriteOverride(writer, "/xl/workbook.xml", "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet.main+xml");
+      WriteOverride(writer, "/xl/styles.xml", "application/vnd.openxmlformats-officedocument.spreadsheetml.styles+xml");
+      WriteOverride(writer, "/docProps/core.xml", "application/vnd.openxmlformats-package.core-properties+xml");
+
+      for (var i = 1; i <= _workbookDfn.Worksheets.Count; i++)
+      {
+        WriteOverride(writer, $"/xl/worksheets/sheet{i}.xml", "application/vnd.openxmlformats-officedocument.spreadsheetml.worksheet+xml");
+      }
+
+      writer.WriteEndElement();
+      writer.WriteEndDocument();
+    }
+
+    private void WriteCoreProperties(ZipArchive archive)
+    {
+      var entry = archive.CreateEntry("docProps/core.xml", CompressionLevel.Optimal);
+      using var stream = entry.Open();
+      using var writer = new XmlTextWriter(stream, Encoding.UTF8);
+
+      var nowIso = DateTime.UtcNow.ToString("yyyy-MM-ddTHH:mm:ssZ", CultureInfo.InvariantCulture);
+      writer.WriteRaw(
+        $"<?xml version=\"1.0\" encoding=\"UTF-8\"?>\r\n" +
+        "<cp:coreProperties " +
+        "xmlns:cp=\"http://schemas.openxmlformats.org/package/2006/metadata/core-properties\" " +
+        "xmlns:dc=\"http://purl.org/dc/elements/1.1/\" " +
+        "xmlns:dcterms=\"http://purl.org/dc/terms/\" " +
+        "xmlns:xsi=\"http://www.w3.org/2001/XMLSchema-instance\">" +
+        "<dc:creator>SimpleExcelExporter</dc:creator>" +
+        $"<dcterms:created xsi:type=\"dcterms:W3CDTF\">{nowIso}</dcterms:created>" +
+        $"<dcterms:modified xsi:type=\"dcterms:W3CDTF\">{nowIso}</dcterms:modified>" +
+        "</cp:coreProperties>");
+      writer.Flush();
+    }
+
+    private void WritePackageRels(ZipArchive archive)
+    {
+      var entry = archive.CreateEntry("_rels/.rels", CompressionLevel.Optimal);
+      using var stream = entry.Open();
+      var settings = new XmlWriterSettings
+      {
+        Encoding = new UTF8Encoding(encoderShouldEmitUTF8Identifier: false),
+        CloseOutput = false,
+      };
+      using var writer = XmlWriter.Create(stream, settings);
+
+      writer.WriteStartDocument(standalone: true);
+      writer.WriteStartElement("Relationships", PackageRelationshipsNamespace);
+
+      WriteRelationship(
+        writer,
+        "rId1",
+        "http://schemas.openxmlformats.org/officeDocument/2006/relationships/officeDocument",
+        "xl/workbook.xml");
+
+      WriteRelationship(
+        writer,
+        "rId2",
+        "http://schemas.openxmlformats.org/package/2006/relationships/metadata/core-properties",
+        "docProps/core.xml");
+
+      writer.WriteEndElement();
+      writer.WriteEndDocument();
+    }
+
+    private void WriteWorkbookRels(ZipArchive archive)
+    {
+      var entry = archive.CreateEntry("xl/_rels/workbook.xml.rels", CompressionLevel.Optimal);
+      using var stream = entry.Open();
+      var settings = new XmlWriterSettings
+      {
+        Encoding = new UTF8Encoding(encoderShouldEmitUTF8Identifier: false),
+        CloseOutput = false,
+      };
+      using var writer = XmlWriter.Create(stream, settings);
+
+      writer.WriteStartDocument(standalone: true);
+      writer.WriteStartElement("Relationships", PackageRelationshipsNamespace);
+
+      WriteRelationship(
+        writer,
+        "rId1",
+        "http://schemas.openxmlformats.org/officeDocument/2006/relationships/styles",
+        "styles.xml");
+
+      var rId = 2;
+      for (var i = 1; i <= _workbookDfn.Worksheets.Count; i++)
+      {
+        WriteRelationship(
+          writer,
+          $"rId{rId}",
+          "http://schemas.openxmlformats.org/officeDocument/2006/relationships/worksheet",
+          $"worksheets/sheet{i}.xml");
+        rId++;
+      }
+
+      writer.WriteEndElement();
+      writer.WriteEndDocument();
     }
   }
 }
