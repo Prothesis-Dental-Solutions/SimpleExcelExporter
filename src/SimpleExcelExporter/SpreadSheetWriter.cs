@@ -753,14 +753,15 @@ namespace SimpleExcelExporter
       var sheets = new Sheets();
       _ = workbook.AppendChild(sheets);
 
-      var workbookStylesPart1 = workbookPart.AddNewPart<WorkbookStylesPart>("rId3");
+      // Styles first, then worksheets — rId2 reserved for styles, rId3+ for sheets
+      var workbookStylesPart1 = workbookPart.AddNewPart<WorkbookStylesPart>("rId2");
       GenerateWorkbookStylesPartContent(workbookStylesPart1);
 
       // Thank you https://stackoverflow.com/questions/9120544/openxml-multiple-sheets
       var count = 1U;
       foreach (var worksheet in _workbookDfn.Worksheets)
       {
-        var worksheetPart = workbookPart.AddNewPart<WorksheetPart>();
+        var worksheetPart = workbookPart.AddNewPart<WorksheetPart>($"rId{count + 2}");  // rId3, rId4, ...
         var sheet = new Sheet { Name = worksheet.Name, SheetId = count, Id = workbookPart.GetIdOfPart(worksheetPart) };
         _ = sheets.AppendChild(sheet);
         var (sheetData, maxColumnCount, lastRowIndex) = GenerateSheetDataForDetails(worksheet);
