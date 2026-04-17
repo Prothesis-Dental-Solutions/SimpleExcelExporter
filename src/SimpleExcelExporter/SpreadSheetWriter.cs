@@ -4,9 +4,11 @@ namespace SimpleExcelExporter
   using System.Collections.Generic;
   using System.Globalization;
   using System.IO;
+  using System.IO.Compression;
   using System.Linq;
   using System.Reflection;
   using System.Xml;
+  using System.Xml.Linq;
   using DocumentFormat.OpenXml;
   using DocumentFormat.OpenXml.Packaging;
   using DocumentFormat.OpenXml.Spreadsheet;
@@ -50,20 +52,29 @@ namespace SimpleExcelExporter
 
     public void Write()
     {
-      using var document = SpreadsheetDocument.Create(_stream, SpreadsheetDocumentType.Workbook);
+      using var buffer = new MemoryStream();
 
       // Adding core file properties is mandatory to avoid a problem with Google Spreadsheet transforming from XLSX to XLSM.
       // cf. https://stackoverflow.com/questions/70319867/avoid-google-spreadsheet-to-convert-an-xlsx-file-created-by-open-xml-sdk-to-xlsm
       // cf. https://github.com/OfficeDev/Open-XML-SDK/issues/1093
       // cf. https://issuetracker.google.com/issues/210875597
-      var coreFilePropPart = document.AddCoreFilePropertiesPart();
-      using (var writer = new XmlTextWriter(coreFilePropPart.GetStream(FileMode.Create), System.Text.Encoding.UTF8))
+      using (var document = SpreadsheetDocument.Create(buffer, SpreadsheetDocumentType.Workbook))
       {
-        writer.WriteRaw("<?xml version=\"1.0\" encoding=\"UTF-8\"?>\r\n<cp:coreProperties xmlns:cp=\"http://schemas.openxmlformats.org/package/2006/metadata/core-properties\"></cp:coreProperties>");
-        writer.Flush();
+        var coreFilePropPart = document.AddCoreFilePropertiesPart();
+        using (var writer = new XmlTextWriter(coreFilePropPart.GetStream(FileMode.Create), System.Text.Encoding.UTF8))
+        {
+          writer.WriteRaw("<?xml version=\"1.0\" encoding=\"UTF-8\"?>\r\n<cp:coreProperties xmlns:cp=\"http://schemas.openxmlformats.org/package/2006/metadata/core-properties\"></cp:coreProperties>");
+          writer.Flush();
+        }
+
+        CreatePartsForExcel(document);
       }
 
-      CreatePartsForExcel(document);
+      buffer.Position = 0;
+      FixContentTypesXml(buffer);
+
+      buffer.Position = 0;
+      buffer.CopyTo(_stream);
     }
 
     private static CellDfn AddHeaderCellToWorkSheet(WorksheetDfn worksheetDfn, string text, List<int> index)
@@ -116,6 +127,60 @@ namespace SimpleExcelExporter
       }
 
       rowDfn.Cells.Add(cellDfn);
+    }
+
+    private static void FixContentTypesXml(MemoryStream buffer)
+    {
+      using var archive = new ZipArchive(buffer, ZipArchiveMode.Update, leaveOpen: true);
+      var entry = archive.GetEntry("[Content_Types].xml");
+      if (entry == null)
+      {
+        return;
+      }
+
+      XDocument doc;
+      using (var entryStream = entry.Open())
+      {
+        doc = XDocument.Load(entryStream);
+      }
+
+      var ns = XNamespace.Get("http://schemas.openxmlformats.org/package/2006/content-types");
+      var root = doc.Root!;
+
+      var xmlDefault = root.Elements(ns + "Default")
+        .FirstOrDefault(d => (string?)d.Attribute("Extension") == "xml");
+
+      if (xmlDefault != null && (string?)xmlDefault.Attribute("ContentType") != "application/xml")
+      {
+        var displacedContentType = (string?)xmlDefault.Attribute("ContentType");
+        var displacedPartName = displacedContentType switch
+        {
+          "application/vnd.openxmlformats-package.core-properties+xml" => "/docProps/core.xml",
+          "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet.main+xml" => "/xl/workbook.xml",
+          _ => null,
+        };
+
+        if (displacedPartName != null)
+        {
+          var alreadyHasOverride = root.Elements(ns + "Override")
+            .Any(o => (string?)o.Attribute("PartName") == displacedPartName);
+
+          if (!alreadyHasOverride)
+          {
+            root.Add(new XElement(
+              ns + "Override",
+              new XAttribute("PartName", displacedPartName),
+              new XAttribute("ContentType", displacedContentType!)));
+          }
+        }
+
+        xmlDefault.SetAttributeValue("ContentType", "application/xml");
+      }
+
+      entry.Delete();
+      var newEntry = archive.CreateEntry("[Content_Types].xml");
+      using var entryWriter = new StreamWriter(newEntry.Open(), new System.Text.UTF8Encoding(encoderShouldEmitUTF8Identifier: false));
+      doc.Save(entryWriter);
     }
 
     private static void GenerateWorksheetPartContent(
