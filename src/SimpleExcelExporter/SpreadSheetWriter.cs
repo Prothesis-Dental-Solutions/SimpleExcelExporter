@@ -17,13 +17,16 @@ namespace SimpleExcelExporter
 
   public class SpreadsheetWriter
   {
-    private const string ContentTypesNamespace = "http://schemas.openxmlformats.org/package/2006/content-types";
-
-    private const string PackageRelationshipsNamespace = "http://schemas.openxmlformats.org/package/2006/relationships";
-
-    private const string RelationshipsNamespace = "http://schemas.openxmlformats.org/officeDocument/2006/relationships";
-
-    private const string SpreadsheetMlNamespace = "http://schemas.openxmlformats.org/spreadsheetml/2006/main";
+    private static readonly Dictionary<CellValues, string> CellTypeAttributes = new()
+    {
+      [CellValues.Boolean] = "b",
+      [CellValues.Date] = "d",
+      [CellValues.Error] = "e",
+      [CellValues.InlineString] = "inlineStr",
+      [CellValues.Number] = "n",
+      [CellValues.SharedString] = "s",
+      [CellValues.String] = "str",
+    };
 
     private readonly Dictionary<string, Attribute?> _cachedAttributes = [];
 
@@ -143,45 +146,8 @@ namespace SimpleExcelExporter
       return index;
     }
 
-    private static string ToCellTypeAttribute(CellValues value)
-    {
-      if (value == CellValues.Boolean)
-      {
-        return "b";
-      }
-
-      if (value == CellValues.Date)
-      {
-        return "d";
-      }
-
-      if (value == CellValues.Error)
-      {
-        return "e";
-      }
-
-      if (value == CellValues.InlineString)
-      {
-        return "inlineStr";
-      }
-
-      if (value == CellValues.Number)
-      {
-        return "n";
-      }
-
-      if (value == CellValues.SharedString)
-      {
-        return "s";
-      }
-
-      if (value == CellValues.String)
-      {
-        return "str";
-      }
-
-      return value.ToString();
-    }
+    private static string ToCellTypeAttribute(CellValues value) =>
+      CellTypeAttributes.TryGetValue(value, out var attribute) ? attribute : value.ToString();
 
     private static void WriteCoreProperties(ZipArchive archive)
     {
@@ -206,7 +172,7 @@ namespace SimpleExcelExporter
 
     private static void WriteOverride(XmlWriter writer, string partName, string contentType)
     {
-      writer.WriteStartElement("Override", ContentTypesNamespace);
+      writer.WriteStartElement("Override", Ns.ContentTypes);
       writer.WriteAttributeString("PartName", partName);
       writer.WriteAttributeString("ContentType", contentType);
       writer.WriteEndElement();
@@ -224,7 +190,7 @@ namespace SimpleExcelExporter
       using var writer = XmlWriter.Create(stream, settings);
 
       writer.WriteStartDocument(standalone: true);
-      writer.WriteStartElement("Relationships", PackageRelationshipsNamespace);
+      writer.WriteStartElement("Relationships", Ns.PackageRelationships);
 
       WriteRelationship(
         writer,
@@ -244,7 +210,7 @@ namespace SimpleExcelExporter
 
     private static void WriteRelationship(XmlWriter writer, string id, string type, string target)
     {
-      writer.WriteStartElement("Relationship", PackageRelationshipsNamespace);
+      writer.WriteStartElement("Relationship", Ns.PackageRelationships);
       writer.WriteAttributeString("Id", id);
       writer.WriteAttributeString("Type", type);
       writer.WriteAttributeString("Target", target);
@@ -790,14 +756,14 @@ namespace SimpleExcelExporter
       using var writer = XmlWriter.Create(stream, settings);
 
       writer.WriteStartDocument(standalone: true);
-      writer.WriteStartElement("Types", ContentTypesNamespace);
+      writer.WriteStartElement("Types", Ns.ContentTypes);
 
-      writer.WriteStartElement("Default", ContentTypesNamespace);
+      writer.WriteStartElement("Default", Ns.ContentTypes);
       writer.WriteAttributeString("Extension", "xml");
       writer.WriteAttributeString("ContentType", "application/xml");
       writer.WriteEndElement();
 
-      writer.WriteStartElement("Default", ContentTypesNamespace);
+      writer.WriteStartElement("Default", Ns.ContentTypes);
       writer.WriteAttributeString("Extension", "rels");
       writer.WriteAttributeString("ContentType", "application/vnd.openxmlformats-package.relationships+xml");
       writer.WriteEndElement();
@@ -827,49 +793,49 @@ namespace SimpleExcelExporter
       using var writer = XmlWriter.Create(stream, settings);
 
       writer.WriteStartDocument(standalone: true);
-      writer.WriteStartElement(string.Empty, "styleSheet", SpreadsheetMlNamespace);
+      writer.WriteStartElement(string.Empty, "styleSheet", Ns.SpreadsheetMl);
 
       // numFmts
-      writer.WriteStartElement("numFmts", SpreadsheetMlNamespace);
+      writer.WriteStartElement("numFmts", Ns.SpreadsheetMl);
       writer.WriteAttributeString("count", "0");
       writer.WriteEndElement();
 
       // fonts
-      writer.WriteStartElement("fonts", SpreadsheetMlNamespace);
+      writer.WriteStartElement("fonts", Ns.SpreadsheetMl);
       writer.WriteAttributeString("count", "1");
-      writer.WriteStartElement("font", SpreadsheetMlNamespace);
-      writer.WriteStartElement("sz", SpreadsheetMlNamespace);
+      writer.WriteStartElement("font", Ns.SpreadsheetMl);
+      writer.WriteStartElement("sz", Ns.SpreadsheetMl);
       writer.WriteAttributeString("val", "11");
       writer.WriteEndElement();
-      writer.WriteStartElement("name", SpreadsheetMlNamespace);
+      writer.WriteStartElement("name", Ns.SpreadsheetMl);
       writer.WriteAttributeString("val", "Calibri");
       writer.WriteEndElement();
-      writer.WriteStartElement("family", SpreadsheetMlNamespace);
+      writer.WriteStartElement("family", Ns.SpreadsheetMl);
       writer.WriteAttributeString("val", "2");
       writer.WriteEndElement();
-      writer.WriteStartElement("scheme", SpreadsheetMlNamespace);
+      writer.WriteStartElement("scheme", Ns.SpreadsheetMl);
       writer.WriteAttributeString("val", "minor");
       writer.WriteEndElement();
       writer.WriteEndElement(); // font
       writer.WriteEndElement(); // fonts
 
       // fills
-      writer.WriteStartElement("fills", SpreadsheetMlNamespace);
+      writer.WriteStartElement("fills", Ns.SpreadsheetMl);
       writer.WriteAttributeString("count", "1");
-      writer.WriteStartElement("fill", SpreadsheetMlNamespace);
-      writer.WriteStartElement("patternFill", SpreadsheetMlNamespace);
+      writer.WriteStartElement("fill", Ns.SpreadsheetMl);
+      writer.WriteStartElement("patternFill", Ns.SpreadsheetMl);
       writer.WriteAttributeString("patternType", "none");
       writer.WriteEndElement();
       writer.WriteEndElement();
       writer.WriteEndElement();
 
       // borders
-      writer.WriteStartElement("borders", SpreadsheetMlNamespace);
+      writer.WriteStartElement("borders", Ns.SpreadsheetMl);
       writer.WriteAttributeString("count", "1");
-      writer.WriteStartElement("border", SpreadsheetMlNamespace);
+      writer.WriteStartElement("border", Ns.SpreadsheetMl);
       foreach (var tag in new[] { "left", "right", "top", "bottom", "diagonal" })
       {
-        writer.WriteStartElement(tag, SpreadsheetMlNamespace);
+        writer.WriteStartElement(tag, Ns.SpreadsheetMl);
         writer.WriteEndElement();
       }
 
@@ -877,9 +843,9 @@ namespace SimpleExcelExporter
       writer.WriteEndElement(); // borders
 
       // cellStyleXfs
-      writer.WriteStartElement("cellStyleXfs", SpreadsheetMlNamespace);
+      writer.WriteStartElement("cellStyleXfs", Ns.SpreadsheetMl);
       writer.WriteAttributeString("count", "1");
-      writer.WriteStartElement("xf", SpreadsheetMlNamespace);
+      writer.WriteStartElement("xf", Ns.SpreadsheetMl);
       writer.WriteAttributeString("numFmtId", "0");
       writer.WriteAttributeString("fontId", "0");
       writer.WriteAttributeString("fillId", "0");
@@ -888,11 +854,11 @@ namespace SimpleExcelExporter
       writer.WriteEndElement();
 
       // cellXfs — one xf per style produced by CreateOrGetStylIndex
-      writer.WriteStartElement("cellXfs", SpreadsheetMlNamespace);
+      writer.WriteStartElement("cellXfs", Ns.SpreadsheetMl);
       writer.WriteAttributeString("count", _numberFormatIds.Count.ToString(CultureInfo.InvariantCulture));
       foreach (var numberFormatId in _numberFormatIds)
       {
-        writer.WriteStartElement("xf", SpreadsheetMlNamespace);
+        writer.WriteStartElement("xf", Ns.SpreadsheetMl);
         writer.WriteAttributeString("numFmtId", numberFormatId.ToString(CultureInfo.InvariantCulture));
         writer.WriteAttributeString("fontId", "0");
         writer.WriteAttributeString("fillId", "0");
@@ -907,9 +873,9 @@ namespace SimpleExcelExporter
       writer.WriteEndElement(); // cellXfs
 
       // cellStyles
-      writer.WriteStartElement("cellStyles", SpreadsheetMlNamespace);
+      writer.WriteStartElement("cellStyles", Ns.SpreadsheetMl);
       writer.WriteAttributeString("count", "1");
-      writer.WriteStartElement("cellStyle", SpreadsheetMlNamespace);
+      writer.WriteStartElement("cellStyle", Ns.SpreadsheetMl);
       writer.WriteAttributeString("name", "Normal");
       writer.WriteAttributeString("xfId", "0");
       writer.WriteAttributeString("builtinId", "0");
@@ -917,7 +883,7 @@ namespace SimpleExcelExporter
       writer.WriteEndElement();
 
       // tableStyles
-      writer.WriteStartElement("tableStyles", SpreadsheetMlNamespace);
+      writer.WriteStartElement("tableStyles", Ns.SpreadsheetMl);
       writer.WriteAttributeString("count", "0");
       writer.WriteAttributeString("defaultTableStyle", "TableStyleMedium9");
       writer.WriteAttributeString("defaultPivotStyle", "PivotStyleLight16");
@@ -939,23 +905,23 @@ namespace SimpleExcelExporter
       using var writer = XmlWriter.Create(stream, settings);
 
       writer.WriteStartDocument(standalone: true);
-      writer.WriteStartElement(string.Empty, "workbook", SpreadsheetMlNamespace);
-      writer.WriteAttributeString("xmlns", "r", null, RelationshipsNamespace);
+      writer.WriteStartElement(string.Empty, "workbook", Ns.SpreadsheetMl);
+      writer.WriteAttributeString("xmlns", "r", null, Ns.Relationships);
 
-      writer.WriteStartElement("bookViews", SpreadsheetMlNamespace);
-      writer.WriteStartElement("workbookView", SpreadsheetMlNamespace);
+      writer.WriteStartElement("bookViews", Ns.SpreadsheetMl);
+      writer.WriteStartElement("workbookView", Ns.SpreadsheetMl);
       writer.WriteEndElement();
       writer.WriteEndElement();
 
-      writer.WriteStartElement("sheets", SpreadsheetMlNamespace);
+      writer.WriteStartElement("sheets", Ns.SpreadsheetMl);
       var sheetId = 1U;
       var rId = 2;
       foreach (var ws in _workbookDfn.Worksheets)
       {
-        writer.WriteStartElement("sheet", SpreadsheetMlNamespace);
+        writer.WriteStartElement("sheet", Ns.SpreadsheetMl);
         writer.WriteAttributeString("name", ws.Name);
         writer.WriteAttributeString("sheetId", sheetId.ToString(CultureInfo.InvariantCulture));
-        writer.WriteAttributeString("r", "id", RelationshipsNamespace, $"rId{rId}");
+        writer.WriteAttributeString("r", "id", Ns.Relationships, $"rId{rId}");
         writer.WriteEndElement();
         sheetId++;
         rId++;
@@ -979,7 +945,7 @@ namespace SimpleExcelExporter
       using var writer = XmlWriter.Create(stream, settings);
 
       writer.WriteStartDocument(standalone: true);
-      writer.WriteStartElement("Relationships", PackageRelationshipsNamespace);
+      writer.WriteStartElement("Relationships", Ns.PackageRelationships);
 
       WriteRelationship(
         writer,
@@ -1023,33 +989,33 @@ namespace SimpleExcelExporter
           : $"A1:{ColumnReferenceHelper.ToLetters(maxColumnCount)}{lastRowIndex}";
 
         writer.WriteStartDocument(standalone: true);
-        writer.WriteStartElement(string.Empty, "worksheet", SpreadsheetMlNamespace);
+        writer.WriteStartElement(string.Empty, "worksheet", Ns.SpreadsheetMl);
 
-        writer.WriteStartElement("dimension", SpreadsheetMlNamespace);
+        writer.WriteStartElement("dimension", Ns.SpreadsheetMl);
         writer.WriteAttributeString("ref", reference);
         writer.WriteEndElement();
 
-        writer.WriteStartElement("sheetViews", SpreadsheetMlNamespace);
-        writer.WriteStartElement("sheetView", SpreadsheetMlNamespace);
+        writer.WriteStartElement("sheetViews", Ns.SpreadsheetMl);
+        writer.WriteStartElement("sheetView", Ns.SpreadsheetMl);
         writer.WriteAttributeString("tabSelected", count == 1U ? "1" : "0");
         writer.WriteAttributeString("workbookViewId", "0");
-        writer.WriteStartElement("selection", SpreadsheetMlNamespace);
+        writer.WriteStartElement("selection", Ns.SpreadsheetMl);
         writer.WriteAttributeString("activeCell", "A1");
         writer.WriteAttributeString("sqref", "A1");
         writer.WriteEndElement();
         writer.WriteEndElement(); // sheetView
         writer.WriteEndElement(); // sheetViews
 
-        writer.WriteStartElement("sheetFormatPr", SpreadsheetMlNamespace);
+        writer.WriteStartElement("sheetFormatPr", Ns.SpreadsheetMl);
         writer.WriteAttributeString("defaultRowHeight", "15");
         writer.WriteAttributeString("defaultColWidth", "15");
         writer.WriteEndElement();
 
         // sheetData
-        writer.WriteStartElement("sheetData", SpreadsheetMlNamespace);
+        writer.WriteStartElement("sheetData", Ns.SpreadsheetMl);
         foreach (var row in sheetData.Elements<Row>())
         {
-          writer.WriteStartElement("row", SpreadsheetMlNamespace);
+          writer.WriteStartElement("row", Ns.SpreadsheetMl);
           if (row.RowIndex != null)
           {
             writer.WriteAttributeString("r", row.RowIndex.Value.ToString(CultureInfo.InvariantCulture));
@@ -1057,7 +1023,7 @@ namespace SimpleExcelExporter
 
           foreach (var cell in row.Elements<Cell>())
           {
-            writer.WriteStartElement("c", SpreadsheetMlNamespace);
+            writer.WriteStartElement("c", Ns.SpreadsheetMl);
             if (cell.CellReference != null)
             {
               writer.WriteAttributeString("r", cell.CellReference.Value);
@@ -1075,15 +1041,15 @@ namespace SimpleExcelExporter
 
             if (cell.CellValue != null)
             {
-              writer.WriteStartElement("v", SpreadsheetMlNamespace);
+              writer.WriteStartElement("v", Ns.SpreadsheetMl);
               writer.WriteString(cell.CellValue.Text);
               writer.WriteEndElement();
             }
 
             if (cell.InlineString != null)
             {
-              writer.WriteStartElement("is", SpreadsheetMlNamespace);
-              writer.WriteStartElement("t", SpreadsheetMlNamespace);
+              writer.WriteStartElement("is", Ns.SpreadsheetMl);
+              writer.WriteStartElement("t", Ns.SpreadsheetMl);
               writer.WriteString(cell.InlineString.Text?.Text ?? string.Empty);
               writer.WriteEndElement();
               writer.WriteEndElement();
@@ -1097,7 +1063,7 @@ namespace SimpleExcelExporter
 
         writer.WriteEndElement(); // sheetData
 
-        writer.WriteStartElement("pageMargins", SpreadsheetMlNamespace);
+        writer.WriteStartElement("pageMargins", Ns.SpreadsheetMl);
         writer.WriteAttributeString("left", "0.7");
         writer.WriteAttributeString("right", "0.7");
         writer.WriteAttributeString("top", "0.75");
@@ -1111,6 +1077,17 @@ namespace SimpleExcelExporter
 
         count++;
       }
+    }
+
+    private static class Ns
+    {
+      public const string ContentTypes = "http://schemas.openxmlformats.org/package/2006/content-types";
+
+      public const string PackageRelationships = "http://schemas.openxmlformats.org/package/2006/relationships";
+
+      public const string Relationships = "http://schemas.openxmlformats.org/officeDocument/2006/relationships";
+
+      public const string SpreadsheetMl = "http://schemas.openxmlformats.org/spreadsheetml/2006/main";
     }
   }
 }
