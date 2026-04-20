@@ -17,6 +17,8 @@ jobs:
       uses: actions/setup-dotnet@v4
       with:
         dotnet-version: 8.0.x
+        cache: true
+        cache-dependency-path: '**/packages.lock.json'
 
     - name: Verify tag matches csproj version
       run: |
@@ -34,7 +36,7 @@ jobs:
         fi
 
     - name: Restore dependencies
-      run: dotnet restore
+      run: dotnet restore --locked-mode
 
     - name: Build
       run: dotnet build --no-restore --configuration release
