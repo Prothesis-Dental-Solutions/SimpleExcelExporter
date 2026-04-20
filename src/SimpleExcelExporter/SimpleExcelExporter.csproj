@@ -18,6 +18,8 @@
     <RepositoryUrl>https://github.com/Prothesis-Dental-Solutions/SimpleExcelExporter</RepositoryUrl>
     <PackageTags>Excel;export;Open-XML-SDK;xlsx;ooxml</PackageTags>
     <RestorePackagesWithLockFile>true</RestorePackagesWithLockFile>
+    <IncludeSymbols>true</IncludeSymbols>
+    <SymbolPackageFormat>snupkg</SymbolPackageFormat>
   </PropertyGroup>
 
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|AnyCPU'">
