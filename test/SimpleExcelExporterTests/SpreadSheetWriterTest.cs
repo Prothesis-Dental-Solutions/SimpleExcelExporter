@@ -85,8 +85,10 @@ namespace SimpleExcelExporter.Tests
 
       // Check
       Assert.That(memoryStream.Length, Is.Not.EqualTo(0));
-      // expected 1 sheet, 4 rows (1 header + 3 players), 3 cells
-      Validate(memoryStream, 1, 4, 4);
+      // expected 1 sheet, 4 rows (1 header + 3 players), 3 cells in the header row.
+      // PlayerWithSameColumnIndexDummyObject.FourthColumn has no [Header] attribute, so its
+      // empty header cell is omitted from the output (the library skips cells with no content).
+      Validate(memoryStream, 1, 4, 3);
 
       // Prepare with object - with same sheet
       var teamWithSameSheetName = TeamWithSameSheetNameDummyObjectPreparator.First();

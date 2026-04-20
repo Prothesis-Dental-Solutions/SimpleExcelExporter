@@ -122,14 +122,21 @@ namespace SimpleExcelExporter.Tests
     [Test]
     public void CellValue_NullInAnnotatedObject_ProducesEmptyCell()
     {
-      // PlayerDummyObjectPreparator.First() — the first player in the fixture — has PlayerCode = null.
+      // PlayerDummyObjectPreparator.First() leaves PlayerCode = null. PlayerCode has Index=0 → column A.
+      // The cell at A2 (row 2, first player) must be empty across every library version:
+      //   - master: the cell is emitted with an empty CellValue
+      //   - PR (pre-skip): the cell is emitted as self-closing t="inlineStr"
+      //   - PR (post-skip): the cell is entirely omitted — A2 is empty by position inference
+      // Looking up by r="A2" covers all three cases: if the cell is absent or carries no value,
+      // it is treated as empty.
       var team = TeamDummyObjectPreparator.FirstWithCollections();
       using var stream = WriteToStreamFromObject(team);
       using var doc = SpreadsheetDocument.Open(stream, false);
 
       var cells = GetRowCells(doc, rowIndex: 1); // skip header row, read the first player
-      var playerCode = GetCellString(cells[0], doc.WorkbookPart!);
-      Assert.That(playerCode, Is.Null.Or.Empty, "PlayerCode was null in the source, the cell must be empty");
+      var cellA2 = cells.FirstOrDefault(c => c.CellReference?.Value == "A2");
+      var value = cellA2 != null ? GetCellString(cellA2, doc.WorkbookPart!) : null;
+      Assert.That(value, Is.Null.Or.Empty, "PlayerCode was null in the source, cell A2 must be absent or empty");
     }
 
     [Test]

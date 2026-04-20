@@ -21,6 +21,10 @@ namespace SimpleExcelExporter.Tests
     [Test]
     public void RowsAndCells_HaveReferenceAttributes()
     {
+      // Every emitted row carries r="N" and every emitted cell carries r="A1" with the correct
+      // row number. Because empty cells are omitted, column indices are not contiguous — we only
+      // verify that each cell's reference matches its actual position and that positions are
+      // strictly increasing within a row.
       var sheetXml = LoadSheetXml();
       var ns = XNamespace.Get(SpreadsheetMlNamespace);
 
@@ -34,18 +38,35 @@ namespace SimpleExcelExporter.Tests
         Assert.That(rowRef, Is.Not.Null, $"Row at position {expectedRowIndex} is missing the 'r' attribute");
         Assert.That(rowRef!.Value, Is.EqualTo(expectedRowIndex.ToString()), "Row 'r' attribute should be 1-indexed and contiguous");
 
-        var columnIndex = 1;
+        var lastColumnIndex = 0;
         foreach (var cell in row.Elements(ns + "c"))
         {
           var cellRef = cell.Attribute("r");
-          Assert.That(cellRef, Is.Not.Null, $"Cell at row {expectedRowIndex} column {columnIndex} is missing the 'r' attribute");
-          var expected = $"{ColumnReferenceHelper.ToLetters(columnIndex)}{expectedRowIndex}";
-          Assert.That(cellRef!.Value, Is.EqualTo(expected), $"Cell reference mismatch at row {expectedRowIndex} column {columnIndex}");
-          columnIndex++;
+          Assert.That(cellRef, Is.Not.Null, $"Cell in row {expectedRowIndex} is missing the 'r' attribute");
+
+          var letters = new string(cellRef!.Value.TakeWhile(char.IsLetter).ToArray());
+          var rowPart = cellRef.Value[letters.Length ..];
+          Assert.That(letters, Is.Not.Empty, $"Cell reference '{cellRef.Value}' has no column letters");
+          Assert.That(rowPart, Is.EqualTo(expectedRowIndex.ToString()), $"Cell reference '{cellRef.Value}' does not match row {expectedRowIndex}");
+
+          var columnIndex = LettersToColumnIndex(letters);
+          Assert.That(columnIndex, Is.GreaterThan(lastColumnIndex), "Cells must appear in strictly increasing column order within a row");
+          lastColumnIndex = columnIndex;
         }
 
         expectedRowIndex++;
       }
+    }
+
+    private static int LettersToColumnIndex(string letters)
+    {
+      var result = 0;
+      foreach (var c in letters)
+      {
+        result = (result * 26) + (c - 'A' + 1);
+      }
+
+      return result;
     }
 
     [Test]
@@ -220,30 +241,24 @@ namespace SimpleExcelExporter.Tests
     }
 
     [Test]
-    public void EmptyInlineStrCell_IsSelfClosingWithoutIsChild()
+    public void EmptyCell_IsOmittedFromOutput()
     {
-      // Fixture FirstFirstWithCollections: row3 column G is new CellDfn(string.Empty, CellDataType.String),
-      // which becomes cell G4 (row 4 after the header row). Apple Numbers requires empty inlineStr
-      // cells to be self-closing with no <is> child (not <c t="inlineStr"><is/></c> or similar).
+      // Fixture FirstFirstWithCollections: row3 column G is new CellDfn(string.Empty, CellDataType.String).
+      // The library omits cells with no content entirely — OOXML readers infer empty positions
+      // from the 'r' attribute of surrounding cells. This is also what Excel emits natively and is
+      // accepted by Apple Numbers.
       var sheetXml = LoadSheetXml();
       var ns = XNamespace.Get(SpreadsheetMlNamespace);
 
-      var emptyCell = sheetXml.Descendants(ns + "c")
+      var cellG4 = sheetXml.Descendants(ns + "c")
         .SingleOrDefault(c => (string?)c.Attribute("r") == "G4");
-      Assert.That(emptyCell, Is.Not.Null, "Expected cell G4 (the empty string cell from the fixture)");
-      Assert.That(emptyCell!.Attribute("t")?.Value, Is.EqualTo("inlineStr"), "G4 should declare t=\"inlineStr\"");
-      Assert.That(emptyCell.Elements().Any(), Is.False, "Empty inlineStr cell must have no child element (no <is>, no <v>)");
-      Assert.That(emptyCell.Value, Is.Empty, "Empty inlineStr cell must have no text content");
+      Assert.That(cellG4, Is.Null, "Empty cell G4 must not appear in the output; its position is inferred from F4 and H4");
 
-      using var archive = GenerateAndOpenXlsxArchive();
-      var entry = archive.GetEntry("xl/worksheets/sheet1.xml");
-      using var stream = entry!.Open();
-      using var reader = new StreamReader(stream, Encoding.UTF8);
-      var content = reader.ReadToEnd();
-      Assert.That(
-        content,
-        Does.Match("<c [^>]*r=\"G4\"[^>]*/>"),
-        "Empty inlineStr cell G4 must be emitted as a self-closing element");
+      // Sanity: the neighbouring cells should still be present to bracket the missing G4.
+      var cellF4 = sheetXml.Descendants(ns + "c").SingleOrDefault(c => (string?)c.Attribute("r") == "F4");
+      var cellH4 = sheetXml.Descendants(ns + "c").SingleOrDefault(c => (string?)c.Attribute("r") == "H4");
+      Assert.That(cellF4, Is.Not.Null, "Expected cell F4 to be present (non-empty in the fixture)");
+      Assert.That(cellH4, Is.Not.Null, "Expected cell H4 to be present (non-empty in the fixture)");
     }
 
     [Test]

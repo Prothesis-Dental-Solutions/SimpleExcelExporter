@@ -1106,6 +1106,16 @@ namespace SimpleExcelExporter
 
           foreach (var cell in row.Elements<Cell>())
           {
+            // Omit cells that have no content. OOXML treats missing cells as empty by position
+            // (cell references on the surviving cells let the reader infer gaps). Matches Excel's
+            // native behaviour and slashes file size on sparse sheets such as MultiColumn padding.
+            // Trade-off: a skipped cell also loses its style hint, acceptable for read-only
+            // exports.
+            if (cell.CellValue == null && cell.InlineString == null)
+            {
+              continue;
+            }
+
             writer.WriteStartElement("c", Ns.SpreadsheetMl);
             if (cell.CellReference != null)
             {
