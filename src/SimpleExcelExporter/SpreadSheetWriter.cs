@@ -73,7 +73,7 @@ namespace SimpleExcelExporter
       WriteContentTypes(archive);
       WritePackageRelationships(archive);
       WriteCoreProperties(archive);
-      WriteWorkbookRels(archive);
+      WriteWorkbookRelationships(archive);
       WriteWorkbook(archive);
       WriteWorksheets(archive);
       WriteStyles(archive);
@@ -1108,7 +1108,7 @@ namespace SimpleExcelExporter
       writer.WriteEndDocument();
     }
 
-    private void WriteWorkbookRels(ZipArchive archive)
+    private void WriteWorkbookRelationships(ZipArchive archive)
     {
       var entry = archive.CreateEntry("xl/_rels/workbook.xml.rels", CompressionLevel.Optimal);
       using var stream = entry.Open();
