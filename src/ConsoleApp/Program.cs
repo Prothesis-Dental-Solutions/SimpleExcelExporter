@@ -15,7 +15,7 @@ namespace ConsoleApp
   {
     public static void Main()
     {
-      // First test : try to create empty Excel file
+      // First test: try to create empty Excel file
       var n = DateTime.Now;
       var tempDi = new DirectoryInfo($"ExampleOutput-{n.Year - 2000:00}-{n.Month:00}-{n.Day:00}-{n.Hour:00}{n.Minute:00}{n.Second:00}");
       tempDi.Create();
@@ -56,10 +56,6 @@ namespace ConsoleApp
       stopwatch.Stop();
       Console.WriteLine($"Done in {stopwatch.Elapsed.TotalSeconds:F2} seconds !");
 
-      // Note: the SpreadsheetWriter constructor does more than allocate — it runs
-      // BuildWorkbook (reflection over annotated objects, only on the annotated
-      // overload), OrderWorkBookDfn, and Validate. For annotated inputs this is
-      // typically the slowest phase.
       Console.WriteLine("Preparing the SpreadsheetWriter...");
       stopwatch.Reset();
       stopwatch.Start();

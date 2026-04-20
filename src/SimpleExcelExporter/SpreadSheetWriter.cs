@@ -40,6 +40,15 @@ namespace SimpleExcelExporter
 
     private readonly WorkbookDfn _workbookDfn;
 
+    /// <summary>
+    /// Initializes a new <see cref="SpreadsheetWriter"/> from an explicit <see cref="WorkbookDfn"/>.
+    /// </summary>
+    /// <param name="stream">The destination stream for the XLSX output. The caller keeps ownership and is responsible for disposal.</param>
+    /// <param name="workbookDfn">The fully built workbook definition.</param>
+    /// <remarks>
+    /// The constructor orders the cells in every row and validates the workbook; call <see cref="Write"/>
+    /// afterwards to produce the actual .xlsx file.
+    /// </remarks>
     public SpreadsheetWriter(Stream stream, WorkbookDfn workbookDfn)
     {
       _stream = stream;
@@ -48,6 +57,16 @@ namespace SimpleExcelExporter
       Validate();
     }
 
+    /// <summary>
+    /// Initializes a new <see cref="SpreadsheetWriter"/> from an annotated object graph.
+    /// </summary>
+    /// <param name="stream">The destination stream for the XLSX output. The caller keeps ownership and is responsible for disposal.</param>
+    /// <param name="team">An object whose properties are decorated with SimpleExcelExporter attributes (<c>SheetName</c>, <c>Header</c>, <c>CellDefinition</c>, …).</param>
+    /// <remarks>
+    /// This constructor runs a reflection walk over <paramref name="team"/> to build the underlying
+    /// <see cref="WorkbookDfn"/>, then orders and validates it. For large inputs this phase usually
+    /// dominates the total runtime — more than the subsequent <see cref="Write"/> call.
+    /// </remarks>
     public SpreadsheetWriter(Stream stream, object team)
     {
       _stream = stream;
