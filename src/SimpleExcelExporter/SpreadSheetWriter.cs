@@ -10,7 +10,6 @@ namespace SimpleExcelExporter
   using System.Text;
   using System.Xml;
   using DocumentFormat.OpenXml;
-  using DocumentFormat.OpenXml.Packaging;
   using DocumentFormat.OpenXml.Spreadsheet;
   using SimpleExcelExporter.Annotations;
   using SimpleExcelExporter.Definitions;
