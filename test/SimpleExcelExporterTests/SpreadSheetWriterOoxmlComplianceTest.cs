@@ -1,5 +1,6 @@
 namespace SimpleExcelExporter.Tests
 {
+  using System.Globalization;
   using System.IO;
   using System.IO.Compression;
   using System.Linq;
@@ -83,31 +84,75 @@ namespace SimpleExcelExporter.Tests
     }
 
     [Test]
-    public void StringCells_UseInlineString_NotStr()
+    public void StringCells_UseSharedStringsOrEmptyInlineStr()
     {
       var sheetXml = LoadSheetXml();
       var ns = XNamespace.Get(SpreadsheetMlNamespace);
 
+      // t="str" is reserved for formula results — never used by this writer.
       var strCells = sheetXml.Descendants(ns + "c")
         .Where(c => (string?)c.Attribute("t") == "str")
         .ToList();
       Assert.That(strCells, Is.Empty, "No cell should use t=\"str\" (reserved for formula results)");
 
+      // Non-empty strings go through the shared strings table: t="s", <v>index</v>, no <is>.
+      var sharedCells = sheetXml.Descendants(ns + "c")
+        .Where(c => (string?)c.Attribute("t") == "s")
+        .ToList();
+      Assert.That(sharedCells, Is.Not.Empty, "Non-empty string cells should reference the shared strings table with t=\"s\"");
+
+      foreach (var cell in sharedCells)
+      {
+        Assert.That(cell.Element(ns + "is"), Is.Null, $"t=\"s\" cell {cell.Attribute("r")?.Value} must NOT have <is> element");
+        var value = cell.Element(ns + "v");
+        Assert.That(value, Is.Not.Null, $"t=\"s\" cell {cell.Attribute("r")?.Value} must have <v> element with index");
+        Assert.That(int.TryParse(value!.Value, out _), Is.True, $"t=\"s\" cell {cell.Attribute("r")?.Value} value must be an integer index");
+      }
+
+      // Empty strings remain as self-closing t="inlineStr" — see EmptyInlineStrCell_IsSelfClosingWithoutIsChild.
       var inlineStrCells = sheetXml.Descendants(ns + "c")
         .Where(c => (string?)c.Attribute("t") == "inlineStr")
         .ToList();
-      Assert.That(inlineStrCells, Is.Not.Empty, "String cells should use t=\"inlineStr\"");
-
-      // Verify inlineStr cells: non-empty ones must have <is><t>...</t></is>, none should have <v>
       foreach (var cell in inlineStrCells)
       {
-        Assert.That(cell.Element(ns + "v"), Is.Null, $"inlineStr cell {cell.Attribute("r")?.Value} must NOT have <v> element");
-        var inlineString = cell.Element(ns + "is");
-        if (inlineString != null)
-        {
-          var text = inlineString.Element(ns + "t");
-          Assert.That(text, Is.Not.Null, $"inlineStr cell {cell.Attribute("r")?.Value} must have <is><t> element");
-        }
+        Assert.That(cell.Elements().Any(), Is.False, $"inlineStr cell {cell.Attribute("r")?.Value} must be empty (self-closing)");
+      }
+    }
+
+    [Test]
+    public void SharedStringsTable_IsConsistentWithCellReferences()
+    {
+      // Load sharedStrings.xml and verify every t="s" cell's index is within bounds, count/uniqueCount are sane.
+      using var archive = GenerateAndOpenXlsxArchive();
+      var sharedEntry = archive.GetEntry("xl/sharedStrings.xml");
+      Assert.That(sharedEntry, Is.Not.Null, "Missing xl/sharedStrings.xml");
+      using var sharedStream = sharedEntry!.Open();
+      var sharedDoc = XDocument.Load(sharedStream);
+      var ns = XNamespace.Get(SpreadsheetMlNamespace);
+
+      var sst = sharedDoc.Root!;
+      Assert.That(sst.Name, Is.EqualTo(ns + "sst"), "Root element of sharedStrings.xml must be <sst>");
+
+      var items = sst.Elements(ns + "si").ToList();
+      var uniqueCount = int.Parse(sst.Attribute("uniqueCount")!.Value, CultureInfo.InvariantCulture);
+      Assert.That(uniqueCount, Is.EqualTo(items.Count), "uniqueCount attribute must match the number of <si> children");
+
+      // Verify every <si><t> has non-empty text (empty strings go inline, not to the table).
+      foreach (var si in items)
+      {
+        var text = si.Element(ns + "t");
+        Assert.That(text, Is.Not.Null, "<si> must contain a <t> element");
+        Assert.That(string.IsNullOrEmpty(text!.Value), Is.False, "<si><t> must not be empty — empty strings belong in inline cells");
+      }
+
+      // Verify every t="s" cell references a valid index.
+      var sheetXml = LoadSheetXml();
+      var sharedCells = sheetXml.Descendants(ns + "c").Where(c => (string?)c.Attribute("t") == "s").ToList();
+      Assert.That(sharedCells, Is.Not.Empty);
+      foreach (var cell in sharedCells)
+      {
+        var index = int.Parse(cell.Element(ns + "v")!.Value, CultureInfo.InvariantCulture);
+        Assert.That(index, Is.InRange(0, items.Count - 1), $"Cell {cell.Attribute("r")?.Value} references index {index}, out of range");
       }
     }
 

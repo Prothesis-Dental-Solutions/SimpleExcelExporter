@@ -38,7 +38,13 @@ namespace SimpleExcelExporter
 
     private readonly List<uint> _numberFormatIds = [];
 
+    private readonly List<string> _sharedStrings = [];
+
+    private readonly Dictionary<string, int> _sharedStringsIndex = [];
+
     private readonly WorkbookDfn _workbookDfn;
+
+    private int _sharedStringsTotalCount;
 
     /// <summary>
     /// Initializes a new <see cref="SpreadsheetWriter"/> from an explicit <see cref="WorkbookDfn"/>.
@@ -85,8 +91,8 @@ namespace SimpleExcelExporter
       // cf. https://issuetracker.google.com/issues/210875597
       using var archive = new ZipArchive(_stream, ZipArchiveMode.Create, leaveOpen: true);
 
-      // WriteStyles must run AFTER WriteWorksheets so that _numberFormatIds
-      // has been populated by CreateOrGetStylIndex during cell creation.
+      // WriteStyles and WriteSharedStrings must run AFTER WriteWorksheets so that
+      // _numberFormatIds and _sharedStrings have been populated during cell creation.
       WriteContentTypes(archive);
       WritePackageRelationships(archive);
       WriteCoreProperties(archive);
@@ -94,6 +100,7 @@ namespace SimpleExcelExporter
       WriteWorkbook(archive);
       WriteWorksheets(archive);
       WriteStyles(archive);
+      WriteSharedStrings(archive);
     }
 
     private static CellDfn AddHeaderCellToWorkSheet(WorksheetDfn worksheetDfn, string text, List<int> index)
@@ -610,11 +617,18 @@ namespace SimpleExcelExporter
       }
       else if (cellDfn.Value is string stringValue)
       {
-        cell.DataType = new EnumValue<CellValues>(CellValues.InlineString);
-        if (!string.IsNullOrEmpty(stringValue))
+        if (string.IsNullOrEmpty(stringValue))
+        {
+          // Empty strings stay as self-closing inlineStr — matches Apple Numbers' preferred shape
+          // and avoids polluting the shared-strings table with empty entries.
+          cell.DataType = new EnumValue<CellValues>(CellValues.InlineString);
+        }
+        else
         {
           stringValue = XmlStringHelper.Sanitize(stringValue);
-          cell.InlineString = new InlineString { Text = new Text(stringValue) };
+          var index = GetOrAddSharedString(stringValue);
+          cell.DataType = new EnumValue<CellValues>(CellValues.SharedString);
+          cell.CellValue = new CellValue(index.ToString(CultureInfo.InvariantCulture));
         }
       }
       else if (cellDfn.Value is TimeSpan timeSpanValue)
@@ -789,11 +803,55 @@ namespace SimpleExcelExporter
 
       WriteOverride(writer, "/xl/workbook.xml", "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet.main+xml");
       WriteOverride(writer, "/xl/styles.xml", "application/vnd.openxmlformats-officedocument.spreadsheetml.styles+xml");
+      WriteOverride(writer, "/xl/sharedStrings.xml", "application/vnd.openxmlformats-officedocument.spreadsheetml.sharedStrings+xml");
       WriteOverride(writer, "/docProps/core.xml", "application/vnd.openxmlformats-package.core-properties+xml");
 
       for (var i = 1; i <= _workbookDfn.Worksheets.Count; i++)
       {
         WriteOverride(writer, $"/xl/worksheets/sheet{i}.xml", "application/vnd.openxmlformats-officedocument.spreadsheetml.worksheet+xml");
+      }
+
+      writer.WriteEndElement();
+      writer.WriteEndDocument();
+    }
+
+    private int GetOrAddSharedString(string value)
+    {
+      _sharedStringsTotalCount++;
+      if (_sharedStringsIndex.TryGetValue(value, out var index))
+      {
+        return index;
+      }
+
+      index = _sharedStrings.Count;
+      _sharedStrings.Add(value);
+      _sharedStringsIndex[value] = index;
+      return index;
+    }
+
+    private void WriteSharedStrings(ZipArchive archive)
+    {
+      var entry = archive.CreateEntry("xl/sharedStrings.xml", CompressionLevel.Optimal);
+      using var stream = entry.Open();
+      var settings = new XmlWriterSettings
+      {
+        Encoding = new UTF8Encoding(encoderShouldEmitUTF8Identifier: false),
+        CloseOutput = false,
+      };
+      using var writer = XmlWriter.Create(stream, settings);
+
+      writer.WriteStartDocument(standalone: true);
+      writer.WriteStartElement(string.Empty, "sst", Ns.SpreadsheetMl);
+      writer.WriteAttributeString("count", _sharedStringsTotalCount.ToString(CultureInfo.InvariantCulture));
+      writer.WriteAttributeString("uniqueCount", _sharedStrings.Count.ToString(CultureInfo.InvariantCulture));
+
+      foreach (var value in _sharedStrings)
+      {
+        writer.WriteStartElement("si", Ns.SpreadsheetMl);
+        writer.WriteStartElement("t", Ns.SpreadsheetMl);
+        writer.WriteString(value);
+        writer.WriteEndElement();
+        writer.WriteEndElement();
       }
 
       writer.WriteEndElement();
@@ -934,7 +992,7 @@ namespace SimpleExcelExporter
 
       writer.WriteStartElement("sheets", Ns.SpreadsheetMl);
       var sheetId = 1U;
-      var rId = 2;
+      var rId = 3;
       foreach (var ws in _workbookDfn.Worksheets)
       {
         writer.WriteStartElement("sheet", Ns.SpreadsheetMl);
@@ -972,7 +1030,13 @@ namespace SimpleExcelExporter
         "http://schemas.openxmlformats.org/officeDocument/2006/relationships/styles",
         "styles.xml");
 
-      var rId = 2;
+      WriteRelationship(
+        writer,
+        "rId2",
+        "http://schemas.openxmlformats.org/officeDocument/2006/relationships/sharedStrings",
+        "sharedStrings.xml");
+
+      var rId = 3;
       for (var i = 1; i <= _workbookDfn.Worksheets.Count; i++)
       {
         WriteRelationship(
