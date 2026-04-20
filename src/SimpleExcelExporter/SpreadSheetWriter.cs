@@ -188,23 +188,6 @@ namespace SimpleExcelExporter
       return value.ToString();
     }
 
-    private static void WriteOverride(XmlWriter writer, string partName, string contentType)
-    {
-      writer.WriteStartElement("Override", ContentTypesNamespace);
-      writer.WriteAttributeString("PartName", partName);
-      writer.WriteAttributeString("ContentType", contentType);
-      writer.WriteEndElement();
-    }
-
-    private static void WriteRelationship(XmlWriter writer, string id, string type, string target)
-    {
-      writer.WriteStartElement("Relationship", PackageRelationshipsNamespace);
-      writer.WriteAttributeString("Id", id);
-      writer.WriteAttributeString("Type", type);
-      writer.WriteAttributeString("Target", target);
-      writer.WriteEndElement();
-    }
-
     private static void WriteCoreProperties(ZipArchive archive)
     {
       var entry = archive.CreateEntry("docProps/core.xml", CompressionLevel.Optimal);
@@ -224,6 +207,14 @@ namespace SimpleExcelExporter
         $"<dcterms:modified xsi:type=\"dcterms:W3CDTF\">{nowIso}</dcterms:modified>" +
         "</cp:coreProperties>");
       writer.Flush();
+    }
+
+    private static void WriteOverride(XmlWriter writer, string partName, string contentType)
+    {
+      writer.WriteStartElement("Override", ContentTypesNamespace);
+      writer.WriteAttributeString("PartName", partName);
+      writer.WriteAttributeString("ContentType", contentType);
+      writer.WriteEndElement();
     }
 
     private static void WritePackageRelationships(ZipArchive archive)
@@ -254,6 +245,15 @@ namespace SimpleExcelExporter
 
       writer.WriteEndElement();
       writer.WriteEndDocument();
+    }
+
+    private static void WriteRelationship(XmlWriter writer, string id, string type, string target)
+    {
+      writer.WriteStartElement("Relationship", PackageRelationshipsNamespace);
+      writer.WriteAttributeString("Id", id);
+      writer.WriteAttributeString("Type", type);
+      writer.WriteAttributeString("Target", target);
+      writer.WriteEndElement();
     }
 
     private void AddCellsToRowFromObjectPropertyInfos(
