@@ -110,6 +110,33 @@ namespace SimpleExcelExporter.Tests
     }
 
     [Test]
+    public void EmptyInlineStrCell_IsSelfClosingWithoutIsChild()
+    {
+      // Fixture FirstFirstWithCollections: row3 column G is new CellDfn(string.Empty, CellDataType.String),
+      // which becomes cell G4 (row 4 after the header row). Apple Numbers requires empty inlineStr
+      // cells to be self-closing with no <is> child (not <c t="inlineStr"><is/></c> or similar).
+      var sheetXml = LoadSheetXml();
+      var ns = XNamespace.Get(SpreadsheetMlNamespace);
+
+      var emptyCell = sheetXml.Descendants(ns + "c")
+        .SingleOrDefault(c => (string?)c.Attribute("r") == "G4");
+      Assert.That(emptyCell, Is.Not.Null, "Expected cell G4 (the empty string cell from the fixture)");
+      Assert.That(emptyCell!.Attribute("t")?.Value, Is.EqualTo("inlineStr"), "G4 should declare t=\"inlineStr\"");
+      Assert.That(emptyCell.Elements().Any(), Is.False, "Empty inlineStr cell must have no child element (no <is>, no <v>)");
+      Assert.That(emptyCell.Value, Is.Empty, "Empty inlineStr cell must have no text content");
+
+      using var archive = GenerateAndOpenXlsxArchive();
+      var entry = archive.GetEntry("xl/worksheets/sheet1.xml");
+      using var stream = entry!.Open();
+      using var reader = new StreamReader(stream, Encoding.UTF8);
+      var content = reader.ReadToEnd();
+      Assert.That(
+        content,
+        Does.Match("<c [^>]*r=\"G4\"[^>]*/>"),
+        "Empty inlineStr cell G4 must be emitted as a self-closing element");
+    }
+
+    [Test]
     public void Worksheet_UsesDefaultNamespace()
     {
       using var archive = GenerateAndOpenXlsxArchive();
