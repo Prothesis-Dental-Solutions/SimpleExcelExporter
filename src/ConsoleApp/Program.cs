@@ -15,6 +15,8 @@ namespace ConsoleApp
   {
     public static void Main()
     {
+      var totalStopwatch = Stopwatch.StartNew();
+
       // First test: try to create empty Excel file
       var n = DateTime.Now;
       var tempDi = new DirectoryInfo($"ExampleOutput-{n.Year - 2000:00}-{n.Month:00}-{n.Day:00}-{n.Hour:00}{n.Minute:00}{n.Second:00}");
@@ -26,6 +28,10 @@ namespace ConsoleApp
       GenerateBigSpreadsheetFromAnnotatedData(tempDi);
       GenerateBigSpreadsheetFromWorkBookDfn(tempDi);
       GenerateSpreadsheetFromGroup(tempDi);
+
+      totalStopwatch.Stop();
+      Console.WriteLine();
+      Console.WriteLine($"Total execution time: {totalStopwatch.Elapsed.TotalSeconds:F2} seconds ({totalStopwatch.Elapsed:hh\\:mm\\:ss})");
     }
 
     private static void GenerateSpreadsheetFromGroup(DirectoryInfo tempDi)
