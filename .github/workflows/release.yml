@@ -21,7 +21,13 @@ jobs:
     - name: Verify tag matches csproj version
       run: |
         TAG="${GITHUB_REF#refs/tags/v}"
-        CSPROJ_VERSION=$(sed -n 's|.*<Version>\(.*\)</Version>.*|\1|p' src/SimpleExcelExporter/SimpleExcelExporter.csproj | head -1)
+        CSPROJ=src/SimpleExcelExporter/SimpleExcelExporter.csproj
+        VERSION_COUNT=$(grep -c '<Version>' "$CSPROJ" || true)
+        if [ "$VERSION_COUNT" -ne 1 ]; then
+          echo "::error::Expected exactly one <Version> element in $CSPROJ, found $VERSION_COUNT"
+          exit 1
+        fi
+        CSPROJ_VERSION=$(sed -n 's|.*<Version>\(.*\)</Version>.*|\1|p' "$CSPROJ")
         if [ "$TAG" != "$CSPROJ_VERSION" ]; then
           echo "::error::Tag v$TAG does not match csproj <Version>$CSPROJ_VERSION</Version>"
           exit 1
