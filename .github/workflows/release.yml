@@ -21,7 +21,7 @@ jobs:
     - name: Verify tag matches csproj version
       run: |
         TAG="${GITHUB_REF#refs/tags/v}"
-        CSPROJ_VERSION=$(sed -n 's|.*<Version>\(.*\)</Version>.*|\1|p' src/SimpleExcelExporter/SimpleExcelExporter.csproj)
+        CSPROJ_VERSION=$(sed -n 's|.*<Version>\(.*\)</Version>.*|\1|p' src/SimpleExcelExporter/SimpleExcelExporter.csproj | head -1)
         if [ "$TAG" != "$CSPROJ_VERSION" ]; then
           echo "::error::Tag v$TAG does not match csproj <Version>$CSPROJ_VERSION</Version>"
           exit 1
