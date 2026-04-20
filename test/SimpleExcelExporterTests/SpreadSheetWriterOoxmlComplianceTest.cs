@@ -15,6 +15,8 @@ namespace SimpleExcelExporter.Tests
 
     private const string ContentTypesNamespace = "http://schemas.openxmlformats.org/package/2006/content-types";
 
+    private const string PackageRelationshipsNamespace = "http://schemas.openxmlformats.org/package/2006/relationships";
+
     [Test]
     public void RowsAndCells_HaveReferenceAttributes()
     {
@@ -105,6 +107,69 @@ namespace SimpleExcelExporter.Tests
         {
           var text = inlineString.Element(ns + "t");
           Assert.That(text, Is.Not.Null, $"inlineStr cell {cell.Attribute("r")?.Value} must have <is><t> element");
+        }
+      }
+    }
+
+    [Test]
+    public void ContentTypes_AllDefaultsAppearBeforeAnyOverride()
+    {
+      // Strict OOXML parsers expect every <Default> entry to appear before the first <Override>.
+      // The schema technically allows interleaving, but tools like Apple Numbers reject it.
+      var contentTypesXml = LoadContentTypesXml();
+      var ns = XNamespace.Get(ContentTypesNamespace);
+
+      var children = contentTypesXml.Root!.Elements().ToList();
+      var lastDefaultIndex = -1;
+      var firstOverrideIndex = -1;
+      for (var i = 0; i < children.Count; i++)
+      {
+        if (children[i].Name == ns + "Default")
+        {
+          lastDefaultIndex = i;
+        }
+        else if (children[i].Name == ns + "Override" && firstOverrideIndex == -1)
+        {
+          firstOverrideIndex = i;
+        }
+      }
+
+      Assert.That(lastDefaultIndex, Is.GreaterThanOrEqualTo(0), "Expected at least one <Default> element");
+      Assert.That(firstOverrideIndex, Is.GreaterThanOrEqualTo(0), "Expected at least one <Override> element");
+      Assert.That(
+        lastDefaultIndex,
+        Is.LessThan(firstOverrideIndex),
+        "All <Default> elements must appear before any <Override> element");
+    }
+
+    [Test]
+    public void RelationshipTargets_AreRelative()
+    {
+      // Apple Numbers rejects .rels files whose <Relationship Target="..."> starts with '/'.
+      // All targets must be relative paths. Applies to both _rels/.rels (package-level) and
+      // xl/_rels/workbook.xml.rels (workbook-level).
+      var relsNs = XNamespace.Get(PackageRelationshipsNamespace);
+      using var archive = GenerateAndOpenXlsxArchive();
+
+      foreach (var relsPath in new[] { "_rels/.rels", "xl/_rels/workbook.xml.rels" })
+      {
+        var entry = archive.GetEntry(relsPath);
+        Assert.That(entry, Is.Not.Null, $"Missing {relsPath} in the generated package");
+        using var stream = entry!.Open();
+        var doc = XDocument.Load(stream);
+
+        var relationships = doc.Descendants(relsNs + "Relationship").ToList();
+        Assert.That(relationships, Is.Not.Empty, $"{relsPath} should contain at least one <Relationship>");
+
+        foreach (var rel in relationships)
+        {
+          var target = rel.Attribute("Target")?.Value;
+          var id = rel.Attribute("Id")?.Value;
+          Assert.That(target, Is.Not.Null.And.Not.Empty, $"{relsPath}: Relationship {id} must have a non-empty Target");
+          Assert.That(
+            target,
+            Does.Not.StartWith("/"),
+            $"{relsPath}: Relationship {id} target '{target}' must be relative (no leading '/')");
         }
       }
     }
