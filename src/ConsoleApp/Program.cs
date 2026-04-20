@@ -36,9 +36,10 @@ namespace ConsoleApp
 
     private static void GenerateSpreadsheetFromGroup(DirectoryInfo tempDi)
     {
-      Console.WriteLine("GenerateBigSpreadsheetFromAnnotatedData");
+      Console.WriteLine("GenerateSpreadsheetFromGroup");
       using var memoryStream = new MemoryStream();
       using var streamWriter = new StreamWriter(memoryStream);
+      Console.WriteLine("Generating the persons...");
       var stopwatch = new Stopwatch();
       stopwatch.Start();
       var group = new Group();
