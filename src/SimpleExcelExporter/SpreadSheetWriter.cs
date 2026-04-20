@@ -65,13 +65,13 @@ namespace SimpleExcelExporter
       // cf. https://issuetracker.google.com/issues/210875597
       using var archive = new ZipArchive(_stream, ZipArchiveMode.Create, leaveOpen: true);
 
-      // Order matters : BuildStylesheetSkeleton must run BEFORE WriteWorksheets
-      // (which populates _stylesheet.CellFormats via CreateOrGetStylIndex) ;
+      // Order matters: BuildStylesheetSkeleton must run BEFORE WriteWorksheets
+      // (which populates _stylesheet.CellFormats via CreateOrGetStylIndex);
       // and both must run BEFORE WriteStyles serializes _stylesheet.
       BuildStylesheetSkeleton();
 
       WriteContentTypes(archive);
-      WritePackageRels(archive);
+      WritePackageRelationships(archive);
       WriteCoreProperties(archive);
       WriteWorkbookRels(archive);
       WriteWorkbook(archive);
@@ -226,7 +226,7 @@ namespace SimpleExcelExporter
       writer.Flush();
     }
 
-    private static void WritePackageRels(ZipArchive archive)
+    private static void WritePackageRelationships(ZipArchive archive)
     {
       var entry = archive.CreateEntry("_rels/.rels", CompressionLevel.Optimal);
       using var stream = entry.Open();
@@ -268,7 +268,7 @@ namespace SimpleExcelExporter
 
       while (objectQueue.Count > 0)
       {
-        (var currentPlayer, var currentPlayerTypePropertyInfos, var currentIteration, var currentParentIndex) = objectQueue.Dequeue();
+        var (currentPlayer, currentPlayerTypePropertyInfos, currentIteration, currentParentIndex) = objectQueue.Dequeue();
 
         foreach (var playerTypePropertyInfo in currentPlayerTypePropertyInfos)
         {
@@ -295,7 +295,7 @@ namespace SimpleExcelExporter
 
               // Add empty cells if needed
               var numberOfEmptyCellToAdd = maxNumberOfElement - childIteration + 1;
-              if (childPlayerType != null && childPlayerTypePropertyInfos != null && numberOfEmptyCellToAdd > 0)
+              if (childPlayerTypePropertyInfos != null && numberOfEmptyCellToAdd > 0)
               {
                 for (var i = 0; i < numberOfEmptyCellToAdd; i++)
                 {
@@ -345,7 +345,7 @@ namespace SimpleExcelExporter
 
       while (objectQueue.Count > 0)
       {
-        (var currentPlayer, var currentPlayerType, var currentPlayerTypePropertyInfos, var currentIteration, var currentParentIndex) = objectQueue.Dequeue();
+        var (currentPlayer, currentPlayerType, currentPlayerTypePropertyInfos, currentIteration, currentParentIndex) = objectQueue.Dequeue();
 
         foreach (var playerTypePropertyInfo in currentPlayerTypePropertyInfos)
         {
@@ -371,7 +371,7 @@ namespace SimpleExcelExporter
 
               // Add empty cells if needed
               var numberOfEmptyCellToAdd = maxNumberOfElement - childIteration + 1;
-              if (childPlayerType != null && childPlayerTypePropertyInfos != null && numberOfEmptyCellToAdd > 0)
+              if (childPlayerTypePropertyInfos != null && numberOfEmptyCellToAdd > 0)
               {
                 for (var i = 0; i < numberOfEmptyCellToAdd; i++)
                 {
@@ -413,7 +413,7 @@ namespace SimpleExcelExporter
             else
             {
               // If the currentPlayer was null when the existing headerCell was added in _headers, then we should update the text.
-              (var headerCellDfn, var textCorrectlySetFlag) = value;
+              var (headerCellDfn, textCorrectlySetFlag) = value;
               if (!textCorrectlySetFlag && currentPlayer != null)
               {
                 _ = _headers.Remove(key);
