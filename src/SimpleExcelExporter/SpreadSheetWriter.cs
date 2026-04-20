@@ -33,14 +33,13 @@ namespace SimpleExcelExporter
 
     private readonly Stream _stream;
 
-    private readonly Stylesheet _stylesheet;
+    private readonly List<uint> _numberFormatIds = [];
 
     private readonly WorkbookDfn _workbookDfn;
 
     public SpreadsheetWriter(Stream stream, WorkbookDfn workbookDfn)
     {
       _stream = stream;
-      _stylesheet = new Stylesheet();
       _workbookDfn = workbookDfn;
       OrderWorkBookDfn();
       Validate();
@@ -49,7 +48,6 @@ namespace SimpleExcelExporter
     public SpreadsheetWriter(Stream stream, object team)
     {
       _stream = stream;
-      _stylesheet = new Stylesheet();
       _workbookDfn = BuildWorkbook(team);
       OrderWorkBookDfn();
       Validate();
@@ -65,11 +63,8 @@ namespace SimpleExcelExporter
       // cf. https://issuetracker.google.com/issues/210875597
       using var archive = new ZipArchive(_stream, ZipArchiveMode.Create, leaveOpen: true);
 
-      // Order matters: BuildStylesheetSkeleton must run BEFORE WriteWorksheets
-      // (which populates _stylesheet.CellFormats via CreateOrGetStylIndex);
-      // and both must run BEFORE WriteStyles serializes _stylesheet.
-      BuildStylesheetSkeleton();
-
+      // WriteStyles must run AFTER WriteWorksheets so that _numberFormatIds
+      // has been populated by CreateOrGetStylIndex during cell creation.
       WriteContentTypes(archive);
       WritePackageRelationships(archive);
       WriteCoreProperties(archive);
@@ -426,71 +421,6 @@ namespace SimpleExcelExporter
       }
     }
 
-    private void BuildStylesheetSkeleton()
-    {
-      // Number formats (empty — using built-in formats only)
-      var numberingFormats = new NumberingFormats { Count = 0U };
-
-      var fonts = new Fonts { Count = 1U };
-
-      // Font 1
-      var font = new Font
-      {
-        FontSize = new FontSize { Val = 11D },
-        FontName = new FontName { Val = "Calibri" },
-        FontFamilyNumbering = new FontFamilyNumbering { Val = 2 },
-        FontScheme = new FontScheme { Val = FontSchemeValues.Minor },
-      };
-
-      _ = fonts.AppendChild(font);
-
-      // Default Fill
-      var fills = new Fills { Count = 1U };
-      var fill = new Fill { PatternFill = new PatternFill { PatternType = PatternValues.None } };
-      _ = fills.AppendChild(fill);
-
-      // Default Border
-      var borders = new Borders { Count = 1U };
-      var border = new Border
-      {
-        LeftBorder = new LeftBorder(),
-        RightBorder = new RightBorder(),
-        TopBorder = new TopBorder(),
-        BottomBorder = new BottomBorder(),
-        DiagonalBorder = new DiagonalBorder(),
-      };
-      _ = borders.AppendChild(border);
-
-      // CellStyleFormats
-      var cellStyleFormats = new CellStyleFormats { Count = 1U };
-      var cellFormat = new CellFormat { NumberFormatId = 0U, FontId = 0U, FillId = 0U, BorderId = 0U };
-      _ = cellStyleFormats.AppendChild(cellFormat);
-
-      // CellFormats — empty, populated by CreateOrGetStylIndex during worksheet processing
-      var cellFormats = new CellFormats { Count = 0U };
-
-      // CellStyles — Excel requires the "Normal" built-in style
-      var cellStyles = new CellStyles { Count = 1U };
-      _ = cellStyles.AppendChild(new CellStyle { Name = "Normal", FormatId = 0U, BuiltinId = 0U });
-
-      // TableStyles — empty but required by strict parsers
-      var tableStyles = new TableStyles
-      {
-        Count = 0U,
-        DefaultTableStyle = "TableStyleMedium9",
-        DefaultPivotStyle = "PivotStyleLight16",
-      };
-
-      _ = _stylesheet.AppendChild(numberingFormats);
-      _ = _stylesheet.AppendChild(fonts);
-      _ = _stylesheet.AppendChild(fills);
-      _ = _stylesheet.AppendChild(borders);
-      _ = _stylesheet.AppendChild(cellStyleFormats);
-      _ = _stylesheet.AppendChild(cellFormats);
-      _ = _stylesheet.AppendChild(cellStyles);
-      _ = _stylesheet.AppendChild(tableStyles);
-    }
-
     private string? BuildText(PropertyInfo playerTypePropertyInfo, Type currentPlayerType, object? currentPlayer)
     {
       var headerAttribute = GetAttributeFrom<HeaderAttribute>(playerTypePropertyInfo);
@@ -737,42 +667,18 @@ namespace SimpleExcelExporter
         return stylIndex;
       }
 
-      var cellFormat = new CellFormat
+      // https://stackoverflow.com/questions/11781210/c-sharp-open-xml-2-0-numberformatid-range
+      var numberFormatId = cellDfn.CellDataType switch
       {
-        ApplyBorder = true,
-        ApplyFont = true,
-        ApplyNumberFormat = BooleanValue.FromBoolean(true),
-        BorderId = 0U,
-        FillId = 0U,
-        FormatId = 0U,
-        FontId = 0U,
+        CellDataType.Date => 14U, // d/m/yyyy
+        CellDataType.String => 49U, // @
+        CellDataType.Percentage => 10U,
+        CellDataType.Time => 20U, // H:mm
+        _ => 0U,
       };
 
-      // https://stackoverflow.com/questions/11781210/c-sharp-open-xml-2-0-numberformatid-range
-      if (cellDfn.CellDataType == CellDataType.Date)
-      {
-        cellFormat.NumberFormatId = 14U; // d/m/yyyy
-      }
-      else if (cellDfn.CellDataType == CellDataType.String)
-      {
-        cellFormat.NumberFormatId = 49U; // @
-      }
-      else if (cellDfn.CellDataType == CellDataType.Percentage)
-      {
-        cellFormat.NumberFormatId = 10U;
-      }
-      else if (cellDfn.CellDataType == CellDataType.Time)
-      {
-        cellFormat.NumberFormatId = 20U; // H:mm
-      }
-      else
-      {
-        cellFormat.NumberFormatId = 0U;
-      }
-
-      var index = _stylesheet.CellFormats!.Count!.Value;
-      _stylesheet.CellFormats!.Count!.Value++;
-      _ = _stylesheet.CellFormats.AppendChild(cellFormat);
+      var index = (uint)_numberFormatIds.Count;
+      _numberFormatIds.Add(numberFormatId);
       Table.Add(styleHashCode, index);
 
       return index;
@@ -981,68 +887,21 @@ namespace SimpleExcelExporter
       writer.WriteEndElement();
       writer.WriteEndElement();
 
-      // cellXfs — produced by CreateOrGetStylIndex, iterate CellFormats children
-      var cellFormats = _stylesheet.Elements<CellFormats>().FirstOrDefault();
-      var xfCount = cellFormats?.Count?.Value ?? 0;
+      // cellXfs — one xf per style produced by CreateOrGetStylIndex
       writer.WriteStartElement("cellXfs", SpreadsheetMlNamespace);
-      writer.WriteAttributeString("count", xfCount.ToString(CultureInfo.InvariantCulture));
-      if (cellFormats != null)
+      writer.WriteAttributeString("count", _numberFormatIds.Count.ToString(CultureInfo.InvariantCulture));
+      foreach (var numberFormatId in _numberFormatIds)
       {
-        foreach (var xf in cellFormats.Elements<CellFormat>())
-        {
-          writer.WriteStartElement("xf", SpreadsheetMlNamespace);
-          if (xf.NumberFormatId != null)
-          {
-            writer.WriteAttributeString("numFmtId", xf.NumberFormatId.Value.ToString(CultureInfo.InvariantCulture));
-          }
-
-          if (xf.FontId != null)
-          {
-            writer.WriteAttributeString("fontId", xf.FontId.Value.ToString(CultureInfo.InvariantCulture));
-          }
-
-          if (xf.FillId != null)
-          {
-            writer.WriteAttributeString("fillId", xf.FillId.Value.ToString(CultureInfo.InvariantCulture));
-          }
-
-          if (xf.BorderId != null)
-          {
-            writer.WriteAttributeString("borderId", xf.BorderId.Value.ToString(CultureInfo.InvariantCulture));
-          }
-
-          if (xf.FormatId != null)
-          {
-            writer.WriteAttributeString("xfId", xf.FormatId.Value.ToString(CultureInfo.InvariantCulture));
-          }
-
-          if (xf.ApplyNumberFormat?.Value == true)
-          {
-            writer.WriteAttributeString("applyNumberFormat", "1");
-          }
-
-          if (xf.ApplyFont?.Value == true)
-          {
-            writer.WriteAttributeString("applyFont", "1");
-          }
-
-          if (xf.ApplyFill?.Value == true)
-          {
-            writer.WriteAttributeString("applyFill", "1");
-          }
-
-          if (xf.ApplyBorder?.Value == true)
-          {
-            writer.WriteAttributeString("applyBorder", "1");
-          }
-
-          if (xf.ApplyAlignment?.Value == true)
-          {
-            writer.WriteAttributeString("applyAlignment", "1");
-          }
-
-          writer.WriteEndElement();
-        }
+        writer.WriteStartElement("xf", SpreadsheetMlNamespace);
+        writer.WriteAttributeString("numFmtId", numberFormatId.ToString(CultureInfo.InvariantCulture));
+        writer.WriteAttributeString("fontId", "0");
+        writer.WriteAttributeString("fillId", "0");
+        writer.WriteAttributeString("borderId", "0");
+        writer.WriteAttributeString("xfId", "0");
+        writer.WriteAttributeString("applyNumberFormat", "1");
+        writer.WriteAttributeString("applyFont", "1");
+        writer.WriteAttributeString("applyBorder", "1");
+        writer.WriteEndElement();
       }
 
       writer.WriteEndElement(); // cellXfs
