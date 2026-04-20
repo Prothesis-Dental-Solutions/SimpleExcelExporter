@@ -54,21 +54,25 @@ namespace ConsoleApp
       }
 
       stopwatch.Stop();
-      Console.WriteLine($"Done in {stopwatch.Elapsed.Seconds} seconds !");
+      Console.WriteLine($"Done in {stopwatch.Elapsed.TotalSeconds:F2} seconds !");
 
-      Console.WriteLine("Instantiating the SpreadsheetWriter...");
+      // Note: the SpreadsheetWriter constructor does more than allocate — it runs
+      // BuildWorkbook (reflection over annotated objects, only on the annotated
+      // overload), OrderWorkBookDfn, and Validate. For annotated inputs this is
+      // typically the slowest phase.
+      Console.WriteLine("Preparing the SpreadsheetWriter...");
       stopwatch.Reset();
       stopwatch.Start();
       var spreadsheetWriter = new SpreadsheetWriter(streamWriter.BaseStream, group);
       stopwatch.Stop();
-      Console.WriteLine($"Done in {stopwatch.Elapsed.Seconds} seconds !");
+      Console.WriteLine($"Done in {stopwatch.Elapsed.TotalSeconds:F2} seconds !");
 
       Console.WriteLine("Writing the Excel file...");
       stopwatch.Reset();
       stopwatch.Start();
       spreadsheetWriter.Write();
       stopwatch.Stop();
-      Console.WriteLine($"Done in {stopwatch.Elapsed.Seconds} seconds !");
+      Console.WriteLine($"Done in {stopwatch.Elapsed.TotalSeconds:F2} seconds !");
 
       using var file = new FileStream(Path.Combine(tempDi.FullName, "TestWithData5.xlsx"), FileMode.Create, FileAccess.Write);
       memoryStream.WriteTo(file);
@@ -146,21 +150,21 @@ namespace ConsoleApp
       }
 
       stopwatch.Stop();
-      Console.WriteLine($"Done in {stopwatch.Elapsed.Seconds} seconds !");
+      Console.WriteLine($"Done in {stopwatch.Elapsed.TotalSeconds:F2} seconds !");
 
-      Console.WriteLine("Instantiating the SpreadsheetWriter...");
+      Console.WriteLine("Preparing the SpreadsheetWriter...");
       stopwatch.Reset();
       stopwatch.Start();
       var spreadsheetWriter = new SpreadsheetWriter(streamWriter.BaseStream, team);
       stopwatch.Stop();
-      Console.WriteLine($"Done in {stopwatch.Elapsed.Seconds} seconds !");
+      Console.WriteLine($"Done in {stopwatch.Elapsed.TotalSeconds:F2} seconds !");
 
       Console.WriteLine("Writing the Excel file...");
       stopwatch.Reset();
       stopwatch.Start();
       spreadsheetWriter.Write();
       stopwatch.Stop();
-      Console.WriteLine($"Done in {stopwatch.Elapsed.Seconds} seconds !");
+      Console.WriteLine($"Done in {stopwatch.Elapsed.TotalSeconds:F2} seconds !");
 
       using var file = new FileStream(Path.Combine(tempDi.FullName, "TestWithData3.xlsx"), FileMode.Create, FileAccess.Write);
       memoryStream.WriteTo(file);
@@ -199,21 +203,21 @@ namespace ConsoleApp
       }
 
       stopwatch.Stop();
-      Console.WriteLine($"Done in {stopwatch.Elapsed.Seconds} seconds !");
+      Console.WriteLine($"Done in {stopwatch.Elapsed.TotalSeconds:F2} seconds !");
 
-      Console.WriteLine("Instantiating the SpreadsheetWriter...");
+      Console.WriteLine("Preparing the SpreadsheetWriter...");
       stopwatch.Reset();
       stopwatch.Start();
       var spreadsheetWriter = new SpreadsheetWriter(streamWriter.BaseStream, workbookDfn);
       stopwatch.Stop();
-      Console.WriteLine($"Done in {stopwatch.Elapsed.Seconds} seconds !");
+      Console.WriteLine($"Done in {stopwatch.Elapsed.TotalSeconds:F2} seconds !");
 
       Console.WriteLine("Writing the Excel file...");
       stopwatch.Reset();
       stopwatch.Start();
       spreadsheetWriter.Write();
       stopwatch.Stop();
-      Console.WriteLine($"Done in {stopwatch.Elapsed.Seconds} seconds !");
+      Console.WriteLine($"Done in {stopwatch.Elapsed.TotalSeconds:F2} seconds !");
 
       using var file = new FileStream(Path.Combine(tempDi.FullName, "TestWithData4.xlsx"), FileMode.Create, FileAccess.Write);
       memoryStream.WriteTo(file);
