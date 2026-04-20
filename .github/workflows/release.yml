@@ -1,0 +1,50 @@
+name: Release
+
+on:
+  push:
+    tags: ['v*']
+
+permissions:
+  contents: write
+
+jobs:
+  publish:
+    runs-on: ubuntu-latest
+    steps:
+    - uses: actions/checkout@v4
+
+    - name: Setup .NET
+      uses: actions/setup-dotnet@v4
+      with:
+        dotnet-version: 8.0.x
+
+    - name: Verify tag matches csproj version
+      run: |
+        TAG="${GITHUB_REF#refs/tags/v}"
+        CSPROJ_VERSION=$(sed -n 's|.*<Version>\(.*\)</Version>.*|\1|p' src/SimpleExcelExporter/SimpleExcelExporter.csproj)
+        if [ "$TAG" != "$CSPROJ_VERSION" ]; then
+          echo "::error::Tag v$TAG does not match csproj <Version>$CSPROJ_VERSION</Version>"
+          exit 1
+        fi
+
+    - name: Restore dependencies
+      run: dotnet restore
+
+    - name: Build
+      run: dotnet build --no-restore --configuration release
+
+    - name: Test
+      run: dotnet test --no-build --configuration release --verbosity normal
+
+    - name: Pack
+      run: dotnet pack --no-build --configuration release
+
+    - name: Push to NuGet
+      env:
+        NUGET_API_KEY: ${{ secrets.NUGET_API_KEY }}
+      run: dotnet nuget push --api-key "$NUGET_API_KEY" --skip-duplicate --source https://api.nuget.org/v3/index.json src/SimpleExcelExporter/bin/release/SimpleExcelExporter.*.nupkg
+
+    - name: Create GitHub Release
+      uses: softprops/action-gh-release@v2
+      with:
+        generate_release_notes: true
