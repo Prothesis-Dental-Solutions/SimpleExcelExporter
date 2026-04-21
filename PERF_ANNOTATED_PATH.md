@@ -1,6 +1,6 @@
 # Performance — annotated-object path
 
-TODO list to speed up `new SpreadsheetWriter(stream, annotatedObject)` + `.Write()` — the path used in production by PCLOUD.
+Tracks the work done on branch `perf/annotated-object-path` to speed up the annotated-object path (`new SpreadsheetWriter(stream, annotatedObject)` + `.Write()`), the code path used by PCLOUD.
 
 ## Context
 
@@ -9,19 +9,9 @@ The library exposes two constructors:
 - `SpreadsheetWriter(Stream, WorkbookDfn)` — caller passes a fully built workbook definition. Fast.
 - `SpreadsheetWriter(Stream, object)` — the **annotated-object path**, used by PCLOUD. The constructor walks the object graph with reflection to build the `WorkbookDfn` internally. Slow on large inputs.
 
-## Baseline (measured on the ConsoleApp, 1 million `Player` rows)
+## Hot spots identified during the PR #9 review
 
-| Phase | Duration |
-|---|---|
-| `Preparing the SpreadsheetWriter` (≈ `BuildWorkbook` via reflection) | **55 s** |
-| `Writing the Excel file` (`.Write()`) | **120 s** |
-| Total for one sheet | **~175 s** |
-
-Comparison on the same workbook shape via the `WorkbookDfn` path (no reflection): `Preparing` = 11 s, `Writing` = 36 s. The 4× slowdown on the annotated path is entirely in the reflection and in the post-reflection object graph it produces.
-
-## Hot spots identified in `SpreadSheetWriter.cs`
-
-### 1. `Type.GetProperties()` called per-player instead of per-type — BuildWorkbook
+### 1. `Type.GetProperties()` called per-player instead of per-type
 
 ```
 foreach (player) CalculateMaxNumberOfElement(player);   // calls GetProperties() internally
@@ -29,13 +19,13 @@ foreach (player) { type.GetProperties(); AddHeaderCells...; }   // 1M calls, sam
 foreach (player) { type.GetProperties(); AddCells...;        }   // 1M calls, same result every time
 ```
 
-Every call hits the CLR reflection machinery. `PropertyInfo[]` is immutable per `Type`.
+**Status: tested and reverted (commit `63156ab`, dropped during rebase).**
 
-**Fix** — a `Dictionary<Type, PropertyInfo[]>` cache (field on `SpreadsheetWriter`). Get-or-add pattern.
+Added a `Dictionary<Type, PropertyInfo[]>` cache and a `GetTypeProperties(Type)` helper, replacing the hot-loop call sites. Controlled 3-run benchmark showed **no measurable gain** (~1 s slower vs baseline, within noise). The CLR already caches `PropertyInfo[]` internally, so the application-level cache was redundant. A second benchmark pass that rebuilt the branch without `#1` confirmed the final runtime was within 0.4 s of the previous result — dropping `#1` did not regress anything.
 
-**Estimated gain: 10–15 s on BuildWorkbook.**
+Decision: dropped from the PR to avoid dead optimisation code.
 
-### 2. String key in `_cachedAttributes` causes ~100M allocations — BuildWorkbook
+### 2. String key in `_cachedAttributes` — ~100 M allocations
 
 ```csharp
 private T? GetAttributeFrom<T>(PropertyInfo propertyInfo)
@@ -46,67 +36,55 @@ private T? GetAttributeFrom<T>(PropertyInfo propertyInfo)
 }
 ```
 
-For 1M players × ~30 properties × 4–5 attribute types queried per property, the interpolation allocates on the order of **120M short strings** just for dictionary keys.
+For 1 M players × ~30 properties × 4-5 attribute types queried per property, the interpolation allocates on the order of **120 M short strings** just for dictionary keys.
 
-**Fix** — switch to `Dictionary<(PropertyInfo, Type), Attribute?>` (the tuple is a `ValueTuple` struct, no heap allocation) or to `ConditionalWeakTable<PropertyInfo, ...>`.
+**Status: applied (commit `9a2a229`). Main gain of the PR.**
 
-**Estimated gain: 5–10 s on BuildWorkbook + large GC pressure reduction.**
+Switched to `Dictionary<(PropertyInfo, Type), Attribute?>` — the tuple is a `ValueTuple` struct, no heap allocation. Tuple equality compares by reference on both components, which is exactly what the string key was simulating.
 
-### 3. `CalculateMaxNumberOfElement` reflects per-player
+**Measured gain: −8.9 s (−7.0 %)** on the 1 M-row fixture (126.29 s → 117.43 s).
 
-Same story as #1 but buried inside the MultiColumn width calculator. It queues objects and re-runs `GetProperties()` for each. Once #1 is in place, `CalculateMaxNumberOfElement` can use the same cache — zero duplicate work.
-
-**Gain folded into #1.**
-
-### 4. `ColumnReferenceHelper.ToLetters(columnIndex)` uncached — Write
+### 3. `ColumnReferenceHelper.ToLetters(columnIndex)` uncached
 
 ```csharp
 CellReference = $"{ColumnReferenceHelper.ToLetters(columnIndex)}{rowIndex}",
 ```
 
-1M rows × ~30 columns = **30M calls**. Each one creates a `StringBuilder`, loops, calls `ToString()`. Columns 1–100 produce exactly 100 distinct strings, each returned hundreds of thousands of times.
+1 M rows × ~30 columns = **30 M calls**. Each one creates a `StringBuilder`, loops, calls `ToString()`. The result for a given `columnIndex` is immutable and tiny.
 
-**Fix** — pre-populate a static `string[] ColumnLettersCache = new string[N]` at class initialization, indexed by columnIndex. Fallback to the current algorithm for columnIndex > N (> 100 covers the vast majority of real-world sheets; Excel's max is 16384).
+**Status: applied (commit `b9d1bae`).**
 
-**Estimated gain: 5–10 s on Write.**
+Added a static `string[] Cache` of size 16 384 (Excel's hard column cap). Pre-populated at class initialization with the computed letters for every valid column (A..XFD). `ToLetters()` hits the array directly for the common case and keeps the original algorithm as a fallback past the cache size.
 
-### 5. `CellReference` string concatenation per cell — Write
+The static footprint is roughly 450 KB of interned strings — negligible next to the multi-MB workbooks the library produces.
 
-Even after #4, each cell still does `$"{letters}{rowIndex}"` which allocates a new string. 30M allocations remaining.
+**Measured gain: −6.5 s (−5.5 %)** on the 1 M-row fixture (117.43 s → 110.97 s).
 
-**Fix** — either precompute `letters + row` on the fly inside the worksheet writer (bypassing the intermediate `CellReference` property), or write directly to the `XmlWriter` without building the string. More invasive, needs to touch `CreateCell` / `WriteWorksheets`.
+### 4. `CalculateMaxNumberOfElement` reflects per-player
 
-**Estimated gain: 2–5 s on Write. Lower priority.**
+Same story as #1 but buried inside the MultiColumn width calculator. Would have folded into #1's gain if #1 had produced one. Since #1 didn't move the needle, this was not revisited — the CLR cache is good enough here too.
 
-## Priority plan
+**Status: not applied.**
 
-### Round 1 — three quick wins (~30–40 min)
+### 5. `CellReference` string concatenation per cell
 
-- [ ] #1 Cache `PropertyInfo[]` by `Type`
-- [ ] #2 Tuple key in `_cachedAttributes`
-- [ ] #4 Static lookup table for column letters
+Even after #3, each cell still does `$"{letters}{rowIndex}"` which allocates a new string. 30 M allocations remaining.
 
-All three are:
-- Non-invasive (internal caches, no API surface change)
-- Semantics-preserving (same output XML byte-for-byte)
-- Covered by the existing 31 tests — no new tests strictly needed, but adding a perf-oriented benchmark (see below) documents the gain
+**Status: not applied (Round 2 candidate).**
 
-**Target after Round 1: 100–120 s total instead of 175 s (~35% speed-up).**
+## Measured results
 
-### Round 2 — structural (later)
+Controlled benchmark (`scripts/benchmark.sh`, 3 runs per state, seeded `Random(42)`, machine idle during runs).
 
-- [ ] #5 Bypass intermediate `CellReference` string, write directly to `XmlWriter`
-- [ ] Stream `SheetData` row-by-row instead of materializing the whole sheet in memory before writing (point #3 of the original PR review, deferred)
+| State | Runtime (median) | Δ vs baseline | File size (`TestWithData3.xlsx`) |
+|---|---:|---:|---:|
+| baseline `1.5.0-alpha.1` | 126.29 s | — | 95.0 MB |
+| + `#2` tuple key | **117.43 s** | −8.9 s (−7.0 %) | 95.0 MB (± 1 B) |
+| + `#3` 16 384-entry letters cache | **110.97 s** | **−15.3 s (−12.1 %)** | 95.0 MB (± 1 B) |
 
-## Validation protocol
+Numbers come from the rebased branch (without `#1`), so the gains attributed to `#2` and `#3` are what actually ship in this PR. An earlier benchmark pass that included `#1` as a stepping stone reached 110.58 s — essentially the same final runtime (within 0.4 s), which is why dropping `#1` was safe.
 
-1. **Before**: run `src/ConsoleApp` on the current `fix/xlsx-ooxml-compliance-numbers` tip, record the `Total execution time`.
-2. Apply one optimization per commit.
-3. **After each commit**: re-run the console app, record the delta.
-4. **After each commit**: run `dotnet test` — all 31 tests must stay green.
-5. **After each commit**: diff two generated .xlsx files (before/after) byte-for-byte. They must be identical — any difference in output means the refactor broke semantics.
-
-For a more rigorous benchmark, introduce BenchmarkDotNet in a dedicated test project later. The console app is enough for a first pass.
+File sizes are identical across all states (variance ≤ 2 bytes from ZIP compression timing noise) — optims are behaviour-preserving.
 
 ## Non-goals
 
@@ -114,7 +92,18 @@ For a more rigorous benchmark, introduce BenchmarkDotNet in a dedicated test pro
 - Altering the XML output format.
 - Introducing parallelism (speculative; would complicate the shared `_cachedAttributes` and `_multiColumnAttribute` state).
 
-## Process
+## Process followed
 
-- Best merged **after** PR #9 lands on `master`, as a dedicated PR titled `perf: speed up annotated-object path`.
-- Version bump: patch (`1.5.1`) — no API change, no new feature, pure performance.
+- One optimisation per commit, each verified against the 48-test suite and exercised through `scripts/benchmark.sh`.
+- The rejected attempt (#1) was dropped via `git rebase --onto` rather than landed as a revert commit — the branch was never pushed with #1 in it.
+- Version bumped to `1.5.0-alpha.3`: the `1.5.0` stable has not shipped yet, so this pre-release continues the `1.5.0-alpha.*` series rather than jumping ahead to `1.5.1`. `1.5.0-alpha.2` is already tagged on master (the pre-release that carried only the initial post-`alpha.1` bump, no perf work), so this branch lands on top as `alpha.3`. PCLOUD will validate this pre-release the same way as `alpha.1`, and a successful run tags the stable `1.5.0`.
+
+## Round 2 (deferred)
+
+- `#5` — skip the intermediate `CellReference` string, write directly to `XmlWriter`. Roughly 30 M string concatenations would go away. Needs touching `CreateCell` and `WriteWorksheets`.
+- Stream `SheetData` row-by-row instead of materialising the entire sheet in memory before writing. Addresses the memory footprint rather than CPU time; more invasive.
+- Consider BenchmarkDotNet in a dedicated test project for sub-second-level micro-benchmarks (GC allocation counts, per-operation time).
+
+## Outputs retained
+
+Per-state `.xlsx` files from this benchmark live at `~/SimpleExcelExporter-bench-outputs-perf/<label>/` for manual inspection.
