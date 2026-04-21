@@ -1122,7 +1122,9 @@ namespace SimpleExcelExporter
               writer.WriteAttributeString("r", cell.CellReference.Value);
             }
 
-            if (cell.StyleIndex != null)
+            // Omit s="0" — OOXML defaults the style index to 0 when the attribute is absent,
+            // matching what Excel emits natively.
+            if (cell.StyleIndex != null && cell.StyleIndex.Value != 0U)
             {
               writer.WriteAttributeString("s", cell.StyleIndex.Value.ToString(CultureInfo.InvariantCulture));
             }
