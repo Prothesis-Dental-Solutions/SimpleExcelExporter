@@ -31,7 +31,9 @@
   </PropertyGroup>
 
   <ItemGroup>
-    <None Include="README.md" Pack="true" PackagePath="" />
+    <!-- The repo-root README is the authoritative one (shown on GitHub). We pack it into
+         the NuGet package too so nuget.org displays the same content. -->
+    <None Include="..\..\README.md" Pack="true" PackagePath="" Link="README.md" />
   </ItemGroup>
 
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|AnyCPU'">
