@@ -1129,7 +1129,9 @@ namespace SimpleExcelExporter
               writer.WriteAttributeString("s", cell.StyleIndex.Value.ToString(CultureInfo.InvariantCulture));
             }
 
-            if (cell.DataType != null)
+            // Omit t="n" — OOXML defaults the cell type to number when the t attribute is absent,
+            // matching what Excel emits natively. Other types (s, b, d, inlineStr, etc.) stay.
+            if (cell.DataType != null && cell.DataType.Value != CellValues.Number)
             {
               writer.WriteAttributeString("t", ToCellTypeAttribute(cell.DataType.Value));
             }
