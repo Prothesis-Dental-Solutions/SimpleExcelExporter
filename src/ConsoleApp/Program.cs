@@ -87,8 +87,11 @@ namespace ConsoleApp
       using var memoryStream = new MemoryStream();
       using var streamWriter = new StreamWriter(memoryStream);
       var team = new Team();
-      var rnd = new Random();
-      var weakPseudoRandomDate = new WeakPseudoRandomDateTime();
+      // Fixed seeds make the generated data deterministic across runs — essential for
+      // before/after size and timing comparisons during perf work. No production impact:
+      // ConsoleApp is a benchmark harness, not a shipped product.
+      var rnd = new Random(42);
+      var weakPseudoRandomDate = new WeakPseudoRandomDateTime(42);
       Console.WriteLine("Generating the players...");
       var stopwatch = new Stopwatch();
       stopwatch.Start();
@@ -181,8 +184,11 @@ namespace ConsoleApp
       var workbookDfn = new WorkbookDfn();
       var worksheetDfn = new WorksheetDfn("Team");
       workbookDfn.Worksheets.Add(worksheetDfn);
-      var rnd = new Random();
-      var weakPseudoRandomDate = new WeakPseudoRandomDateTime();
+      // Fixed seeds make the generated data deterministic across runs — essential for
+      // before/after size and timing comparisons during perf work. No production impact:
+      // ConsoleApp is a benchmark harness, not a shipped product.
+      var rnd = new Random(42);
+      var weakPseudoRandomDate = new WeakPseudoRandomDateTime(42);
       Console.WriteLine("Generating the players...");
       var stopwatch = new Stopwatch();
       stopwatch.Start();
