@@ -28,7 +28,7 @@ namespace SimpleExcelExporter
       [CellValues.String] = "str",
     };
 
-    private readonly Dictionary<string, Attribute?> _cachedAttributes = [];
+    private readonly Dictionary<(PropertyInfo Property, Type AttributeType), Attribute?> _cachedAttributes = [];
 
     private readonly Dictionary<string, (CellDfn, bool)> _headers = [];
 
@@ -728,15 +728,13 @@ namespace SimpleExcelExporter
     private T? GetAttributeFrom<T>(PropertyInfo propertyInfo)
       where T : Attribute
     {
-      var key = $"{propertyInfo.Module.MetadataToken}_{propertyInfo.MetadataToken}_{typeof(T).Name}";
+      var attrType = typeof(T);
+      var key = (propertyInfo, attrType);
       if (_cachedAttributes.TryGetValue(key, out var cachedAttribute))
       {
         return (T?)cachedAttribute;
       }
 
-      var attrType = typeof(T);
-
-      // property is expected to be not null because instance and property
       var attribute = (T?)propertyInfo.GetCustomAttributes(attrType, false).FirstOrDefault();
       _cachedAttributes.Add(key, attribute);
       return attribute;
