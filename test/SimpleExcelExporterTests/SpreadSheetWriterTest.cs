@@ -85,8 +85,10 @@ namespace SimpleExcelExporter.Tests
 
       // Check
       Assert.That(memoryStream.Length, Is.Not.EqualTo(0));
-      // expected 1 sheet, 4 rows (1 header + 3 players), 3 cells
-      Validate(memoryStream, 1, 4, 4);
+      // expected 1 sheet, 4 rows (1 header + 3 players), 3 cells in the header row.
+      // PlayerWithSameColumnIndexDummyObject.FourthColumn has no [Header] attribute, so its
+      // empty header cell is omitted from the output (the library skips cells with no content).
+      Validate(memoryStream, 1, 4, 3);
 
       // Prepare with object - with same sheet
       var teamWithSameSheetName = TeamWithSameSheetNameDummyObjectPreparator.First();
@@ -137,12 +139,12 @@ namespace SimpleExcelExporter.Tests
 
       var workbookPart = spreadsheetDocument.WorkbookPart;
       var worksheetsPart = workbookPart!.WorksheetParts.First();
-      var sheetData = worksheetsPart.Worksheet.GetFirstChild<SheetData>();
+      var sheetData = worksheetsPart.Worksheet!.GetFirstChild<SheetData>();
       var rows = sheetData!.Descendants<Row>().ToList();
       var cells = rows[0].Descendants<Cell>();
 
       Assert.That(workbookPart.Workbook, Is.Not.Null);
-      Assert.That(workbookPart.Workbook.Sheets, Is.Not.Null);
+      Assert.That(workbookPart.Workbook!.Sheets, Is.Not.Null);
       Assert.That(expectedSheetsCount, Is.EqualTo(workbookPart.Workbook.Sheets!.Count()));
       Assert.That(expectedRowsCount, Is.EqualTo(rows.Count));
       Assert.That(expectedCellsCount, Is.EqualTo(cells.Count()));

@@ -1,4 +1,4 @@
-name: .NET
+name: CI
 
 on:
   push:
@@ -17,15 +17,11 @@ jobs:
       uses: actions/setup-dotnet@v4
       with:
         dotnet-version: 8.0.x
+        cache: true
+        cache-dependency-path: '**/packages.lock.json'
     - name: Restore dependencies
-      run: dotnet restore
+      run: dotnet restore --locked-mode
     - name: Build
-      run: dotnet build --no-restore
+      run: dotnet build --no-restore --configuration Release
     - name: Test
-      run: dotnet test --no-build --verbosity normal
-    - name: Pack
-      run: dotnet pack --verbosity normal --configuration release
-    - name: Push
-      env: # environment variable
-        NUGET_API_KEY: ${{ secrets.NUGET_API_KEY }}
-      run: dotnet nuget push --api-key "$NUGET_API_KEY" --skip-duplicate --source https://api.nuget.org/v3/index.json src/SimpleExcelExporter/bin/release/SimpleExcelExporter.*.nupkg
+      run: dotnet test --no-build --configuration Release --verbosity normal

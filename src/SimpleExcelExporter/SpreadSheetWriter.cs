@@ -4,11 +4,12 @@ namespace SimpleExcelExporter
   using System.Collections.Generic;
   using System.Globalization;
   using System.IO;
+  using System.IO.Compression;
   using System.Linq;
   using System.Reflection;
+  using System.Text;
   using System.Xml;
   using DocumentFormat.OpenXml;
-  using DocumentFormat.OpenXml.Packaging;
   using DocumentFormat.OpenXml.Spreadsheet;
   using SimpleExcelExporter.Annotations;
   using SimpleExcelExporter.Definitions;
@@ -16,6 +17,17 @@ namespace SimpleExcelExporter
 
   public class SpreadsheetWriter
   {
+    private static readonly Dictionary<CellValues, string> CellTypeAttributes = new()
+    {
+      [CellValues.Boolean] = "b",
+      [CellValues.Date] = "d",
+      [CellValues.Error] = "e",
+      [CellValues.InlineString] = "inlineStr",
+      [CellValues.Number] = "n",
+      [CellValues.SharedString] = "s",
+      [CellValues.String] = "str",
+    };
+
     private readonly Dictionary<string, Attribute?> _cachedAttributes = [];
 
     private readonly Dictionary<string, (CellDfn, bool)> _headers = [];
@@ -24,23 +36,46 @@ namespace SimpleExcelExporter
 
     private readonly Stream _stream;
 
-    private readonly Stylesheet _stylesheet;
+    private readonly List<uint> _numberFormatIds = [];
+
+    private readonly List<string> _sharedStrings = [];
+
+    private readonly Dictionary<string, int> _sharedStringsIndex = [];
 
     private readonly WorkbookDfn _workbookDfn;
 
+    private int _sharedStringsTotalCount;
+
+    /// <summary>
+    /// Initializes a new <see cref="SpreadsheetWriter"/> from an explicit <see cref="WorkbookDfn"/>.
+    /// </summary>
+    /// <param name="stream">The destination stream for the XLSX output. The caller keeps ownership and is responsible for disposal.</param>
+    /// <param name="workbookDfn">The fully built workbook definition.</param>
+    /// <remarks>
+    /// The constructor orders the cells in every row and validates the workbook; call <see cref="Write"/>
+    /// afterwards to produce the actual .xlsx file.
+    /// </remarks>
     public SpreadsheetWriter(Stream stream, WorkbookDfn workbookDfn)
     {
       _stream = stream;
-      _stylesheet = new Stylesheet();
       _workbookDfn = workbookDfn;
       OrderWorkBookDfn();
       Validate();
     }
 
+    /// <summary>
+    /// Initializes a new <see cref="SpreadsheetWriter"/> from an annotated object graph.
+    /// </summary>
+    /// <param name="stream">The destination stream for the XLSX output. The caller keeps ownership and is responsible for disposal.</param>
+    /// <param name="team">An object whose properties are decorated with SimpleExcelExporter attributes (<c>SheetName</c>, <c>Header</c>, <c>CellDefinition</c>, …).</param>
+    /// <remarks>
+    /// This constructor runs a reflection walk over <paramref name="team"/> to build the underlying
+    /// <see cref="WorkbookDfn"/>, then orders and validates it. For large inputs this phase usually
+    /// dominates the total runtime — more than the subsequent <see cref="Write"/> call.
+    /// </remarks>
     public SpreadsheetWriter(Stream stream, object team)
     {
       _stream = stream;
-      _stylesheet = new Stylesheet();
       _workbookDfn = BuildWorkbook(team);
       OrderWorkBookDfn();
       Validate();
@@ -50,20 +85,22 @@ namespace SimpleExcelExporter
 
     public void Write()
     {
-      using var document = SpreadsheetDocument.Create(_stream, SpreadsheetDocumentType.Workbook);
-
       // Adding core file properties is mandatory to avoid a problem with Google Spreadsheet transforming from XLSX to XLSM.
       // cf. https://stackoverflow.com/questions/70319867/avoid-google-spreadsheet-to-convert-an-xlsx-file-created-by-open-xml-sdk-to-xlsm
       // cf. https://github.com/OfficeDev/Open-XML-SDK/issues/1093
       // cf. https://issuetracker.google.com/issues/210875597
-      var coreFilePropPart = document.AddCoreFilePropertiesPart();
-      using (var writer = new XmlTextWriter(coreFilePropPart.GetStream(FileMode.Create), System.Text.Encoding.UTF8))
-      {
-        writer.WriteRaw("<?xml version=\"1.0\" encoding=\"UTF-8\"?>\r\n<cp:coreProperties xmlns:cp=\"http://schemas.openxmlformats.org/package/2006/metadata/core-properties\"></cp:coreProperties>");
-        writer.Flush();
-      }
+      using var archive = new ZipArchive(_stream, ZipArchiveMode.Create, leaveOpen: true);
 
-      CreatePartsForExcel(document);
+      // WriteStyles and WriteSharedStrings must run AFTER WriteWorksheets so that
+      // _numberFormatIds and _sharedStrings have been populated during cell creation.
+      WriteContentTypes(archive);
+      WritePackageRelationships(archive);
+      WriteCoreProperties(archive);
+      WriteWorkbookRelationships(archive);
+      WriteWorkbook(archive);
+      WriteWorksheets(archive);
+      WriteStyles(archive);
+      WriteSharedStrings(archive);
     }
 
     private static CellDfn AddHeaderCellToWorkSheet(WorksheetDfn worksheetDfn, string text, List<int> index)
@@ -118,30 +155,6 @@ namespace SimpleExcelExporter
       rowDfn.Cells.Add(cellDfn);
     }
 
-    private static void GenerateWorksheetPartContent(WorksheetPart worksheetPart, SheetData sheetData, bool tabSelectedFlag)
-    {
-      var worksheet = new Worksheet();
-      var sheetDimension = new SheetDimension { Reference = "A1" };
-
-      var sheetViews = new SheetViews();
-
-      var sheetView = new SheetView { TabSelected = tabSelectedFlag, WorkbookViewId = 0U };
-      var selection = new Selection { ActiveCell = "A1", SequenceOfReferences = new ListValue<StringValue> { InnerText = "A1" } };
-
-      _ = sheetView.AppendChild(selection);
-
-      _ = sheetViews.AppendChild(sheetView);
-      var sheetFormatProperties = new SheetFormatProperties { DefaultRowHeight = 15D, DefaultColumnWidth = 15D };
-
-      var pageMargins = new PageMargins { Left = 0.7D, Right = 0.7D, Top = 0.75D, Bottom = 0.75D, Header = 0.3D, Footer = 0.3D };
-      _ = worksheet.AppendChild(sheetDimension);
-      _ = worksheet.AppendChild(sheetViews);
-      _ = worksheet.AppendChild(sheetFormatProperties);
-      _ = worksheet.AppendChild(sheetData);
-      _ = worksheet.AppendChild(pageMargins);
-      worksheetPart.Worksheet = worksheet;
-    }
-
     private static List<int> ManageIndex(int iteration, List<int>? parentIndex, IndexAttribute? indexAttribute)
     {
       // Index management
@@ -159,6 +172,77 @@ namespace SimpleExcelExporter
       return index;
     }
 
+    private static string ToCellTypeAttribute(CellValues value) =>
+      CellTypeAttributes.TryGetValue(value, out var attribute) ? attribute : value.ToString();
+
+    private static void WriteCoreProperties(ZipArchive archive)
+    {
+      var entry = archive.CreateEntry("docProps/core.xml", CompressionLevel.Optimal);
+      using var stream = entry.Open();
+      using var writer = new XmlTextWriter(stream, Encoding.UTF8);
+
+      var nowIso = DateTime.UtcNow.ToString("yyyy-MM-ddTHH:mm:ssZ", CultureInfo.InvariantCulture);
+      writer.WriteRaw(
+        $"<?xml version=\"1.0\" encoding=\"UTF-8\"?>\r\n" +
+        "<cp:coreProperties " +
+        "xmlns:cp=\"http://schemas.openxmlformats.org/package/2006/metadata/core-properties\" " +
+        "xmlns:dc=\"http://purl.org/dc/elements/1.1/\" " +
+        "xmlns:dcterms=\"http://purl.org/dc/terms/\" " +
+        "xmlns:xsi=\"http://www.w3.org/2001/XMLSchema-instance\">" +
+        "<dc:creator>SimpleExcelExporter</dc:creator>" +
+        $"<dcterms:created xsi:type=\"dcterms:W3CDTF\">{nowIso}</dcterms:created>" +
+        $"<dcterms:modified xsi:type=\"dcterms:W3CDTF\">{nowIso}</dcterms:modified>" +
+        "</cp:coreProperties>");
+      writer.Flush();
+    }
+
+    private static void WriteOverride(XmlWriter writer, string partName, string contentType)
+    {
+      writer.WriteStartElement("Override", Ns.ContentTypes);
+      writer.WriteAttributeString("PartName", partName);
+      writer.WriteAttributeString("ContentType", contentType);
+      writer.WriteEndElement();
+    }
+
+    private static void WritePackageRelationships(ZipArchive archive)
+    {
+      var entry = archive.CreateEntry("_rels/.rels", CompressionLevel.Optimal);
+      using var stream = entry.Open();
+      var settings = new XmlWriterSettings
+      {
+        Encoding = new UTF8Encoding(encoderShouldEmitUTF8Identifier: false),
+        CloseOutput = false,
+      };
+      using var writer = XmlWriter.Create(stream, settings);
+
+      writer.WriteStartDocument(standalone: true);
+      writer.WriteStartElement("Relationships", Ns.PackageRelationships);
+
+      WriteRelationship(
+        writer,
+        "rId1",
+        "http://schemas.openxmlformats.org/officeDocument/2006/relationships/officeDocument",
+        "xl/workbook.xml");
+
+      WriteRelationship(
+        writer,
+        "rId2",
+        "http://schemas.openxmlformats.org/package/2006/relationships/metadata/core-properties",
+        "docProps/core.xml");
+
+      writer.WriteEndElement();
+      writer.WriteEndDocument();
+    }
+
+    private static void WriteRelationship(XmlWriter writer, string id, string type, string target)
+    {
+      writer.WriteStartElement("Relationship", Ns.PackageRelationships);
+      writer.WriteAttributeString("Id", id);
+      writer.WriteAttributeString("Type", type);
+      writer.WriteAttributeString("Target", target);
+      writer.WriteEndElement();
+    }
+
     private void AddCellsToRowFromObjectPropertyInfos(
       object? player,
       PropertyInfo[] playerTypePropertyInfos,
@@ -171,7 +255,7 @@ namespace SimpleExcelExporter
 
       while (objectQueue.Count > 0)
       {
-        (var currentPlayer, var currentPlayerTypePropertyInfos, var currentIteration, var currentParentIndex) = objectQueue.Dequeue();
+        var (currentPlayer, currentPlayerTypePropertyInfos, currentIteration, currentParentIndex) = objectQueue.Dequeue();
 
         foreach (var playerTypePropertyInfo in currentPlayerTypePropertyInfos)
         {
@@ -198,7 +282,7 @@ namespace SimpleExcelExporter
 
               // Add empty cells if needed
               var numberOfEmptyCellToAdd = maxNumberOfElement - childIteration + 1;
-              if (childPlayerType != null && childPlayerTypePropertyInfos != null && numberOfEmptyCellToAdd > 0)
+              if (childPlayerTypePropertyInfos != null && numberOfEmptyCellToAdd > 0)
               {
                 for (var i = 0; i < numberOfEmptyCellToAdd; i++)
                 {
@@ -248,7 +332,7 @@ namespace SimpleExcelExporter
 
       while (objectQueue.Count > 0)
       {
-        (var currentPlayer, var currentPlayerType, var currentPlayerTypePropertyInfos, var currentIteration, var currentParentIndex) = objectQueue.Dequeue();
+        var (currentPlayer, currentPlayerType, currentPlayerTypePropertyInfos, currentIteration, currentParentIndex) = objectQueue.Dequeue();
 
         foreach (var playerTypePropertyInfo in currentPlayerTypePropertyInfos)
         {
@@ -274,7 +358,7 @@ namespace SimpleExcelExporter
 
               // Add empty cells if needed
               var numberOfEmptyCellToAdd = maxNumberOfElement - childIteration + 1;
-              if (childPlayerType != null && childPlayerTypePropertyInfos != null && numberOfEmptyCellToAdd > 0)
+              if (childPlayerTypePropertyInfos != null && numberOfEmptyCellToAdd > 0)
               {
                 for (var i = 0; i < numberOfEmptyCellToAdd; i++)
                 {
@@ -316,7 +400,7 @@ namespace SimpleExcelExporter
             else
             {
               // If the currentPlayer was null when the existing headerCell was added in _headers, then we should update the text.
-              (var headerCellDfn, var textCorrectlySetFlag) = value;
+              var (headerCellDfn, textCorrectlySetFlag) = value;
               if (!textCorrectlySetFlag && currentPlayer != null)
               {
                 _ = _headers.Remove(key);
@@ -481,19 +565,19 @@ namespace SimpleExcelExporter
       }
     }
 
-    private Cell CreateCell(CellDfn cellDfn)
+    private Cell CreateCell(CellDfn cellDfn, uint rowIndex, int columnIndex)
     {
       var stylIndex = CreateOrGetStylIndex(cellDfn);
 
       var cell = new Cell
       {
+        CellReference = $"{ColumnReferenceHelper.ToLetters(columnIndex)}{rowIndex}",
         StyleIndex = stylIndex,
       };
 
       if (cellDfn.Value == null)
       {
-        cell.CellValue = new CellValue(string.Empty);
-        cell.DataType = new EnumValue<CellValues>(CellValues.String);
+        cell.DataType = new EnumValue<CellValues>(CellValues.InlineString);
       }
       else if (cellDfn.Value is DateTime dateTimeValue)
       {
@@ -533,9 +617,19 @@ namespace SimpleExcelExporter
       }
       else if (cellDfn.Value is string stringValue)
       {
-        stringValue = XmlStringHelper.Sanitize(stringValue);
-        cell.CellValue = new CellValue(stringValue);
-        cell.DataType = new EnumValue<CellValues>(CellValues.String);
+        if (string.IsNullOrEmpty(stringValue))
+        {
+          // Empty strings stay as self-closing inlineStr — matches Apple Numbers' preferred shape
+          // and avoids polluting the shared-strings table with empty entries.
+          cell.DataType = new EnumValue<CellValues>(CellValues.InlineString);
+        }
+        else
+        {
+          stringValue = XmlStringHelper.Sanitize(stringValue);
+          var index = GetOrAddSharedString(stringValue);
+          cell.DataType = new EnumValue<CellValues>(CellValues.SharedString);
+          cell.CellValue = new CellValue(index.ToString(CultureInfo.InvariantCulture));
+        }
       }
       else if (cellDfn.Value is TimeSpan timeSpanValue)
       {
@@ -551,12 +645,14 @@ namespace SimpleExcelExporter
       return cell;
     }
 
-    private Row CreateHeaderRowForExcel(IEnumerable<CellDfn> columnHeadings)
+    private Row CreateHeaderRowForExcel(IEnumerable<CellDfn> columnHeadings, uint rowIndex)
     {
-      var row = new Row();
+      var row = new Row { RowIndex = rowIndex };
+      var columnIndex = 1;
       foreach (var cellDfn in columnHeadings)
       {
-        _ = row.AppendChild(CreateCell(cellDfn));
+        _ = row.AppendChild(CreateCell(cellDfn, rowIndex, columnIndex));
+        columnIndex++;
       }
 
       return row;
@@ -570,148 +666,63 @@ namespace SimpleExcelExporter
         return stylIndex;
       }
 
-      var cellFormat = new CellFormat
+      // https://stackoverflow.com/questions/11781210/c-sharp-open-xml-2-0-numberformatid-range
+      var numberFormatId = cellDfn.CellDataType switch
       {
-        ApplyBorder = true,
-        ApplyFont = true,
-        ApplyNumberFormat = BooleanValue.FromBoolean(true),
-        BorderId = 0U,
-        FillId = 0U,
-        FormatId = 0U,
-        FontId = 0U,
+        CellDataType.Date => 14U, // d/m/yyyy
+        CellDataType.String => 49U, // @
+        CellDataType.Percentage => 10U,
+        CellDataType.Time => 20U, // H:mm
+        _ => 0U,
       };
 
-      // https://stackoverflow.com/questions/11781210/c-sharp-open-xml-2-0-numberformatid-range
-      if (cellDfn.CellDataType == CellDataType.Date)
-      {
-        cellFormat.NumberFormatId = 14U; // d/m/yyyy
-      }
-      else if (cellDfn.CellDataType == CellDataType.String)
-      {
-        cellFormat.NumberFormatId = 49U; // @
-      }
-      else if (cellDfn.CellDataType == CellDataType.Percentage)
-      {
-        cellFormat.NumberFormatId = 10U;
-      }
-      else if (cellDfn.CellDataType == CellDataType.Time)
-      {
-        cellFormat.NumberFormatId = 20U; // H:mm
-      }
-      else
-      {
-        cellFormat.NumberFormatId = 0U;
-      }
-
-      var index = _stylesheet.CellFormats!.Count!.Value;
-      _stylesheet.CellFormats!.Count!.Value++;
-      _ = _stylesheet.CellFormats.AppendChild(cellFormat);
+      var index = (uint)_numberFormatIds.Count;
+      _numberFormatIds.Add(numberFormatId);
       Table.Add(styleHashCode, index);
 
       return index;
     }
 
-    private void CreatePartsForExcel(SpreadsheetDocument document)
+    private Row GenerateRowForChildPartDetail(RowDfn rowDfn, uint rowIndex)
     {
-      var workbookPart = document.AddWorkbookPart();
-      var workbook = new Workbook();
-      workbook.Append(new BookViews(new WorkbookView()));
-      workbookPart.Workbook = workbook;
-      var sheets = new Sheets();
-      _ = workbook.AppendChild(sheets);
-
-      var workbookStylesPart1 = workbookPart.AddNewPart<WorkbookStylesPart>("rId3");
-      GenerateWorkbookStylesPartContent(workbookStylesPart1);
-
-      // Thank you https://stackoverflow.com/questions/9120544/openxml-multiple-sheets
-      var count = 1U;
-      foreach (var worksheet in _workbookDfn.Worksheets)
-      {
-        var worksheetPart = workbookPart.AddNewPart<WorksheetPart>();
-        var sheet = new Sheet { Name = worksheet.Name, SheetId = count, Id = workbookPart.GetIdOfPart(worksheetPart) };
-        _ = sheets.AppendChild(sheet);
-        var sheetData = GenerateSheetDataForDetails(worksheet);
-        GenerateWorksheetPartContent(worksheetPart, sheetData, count == 1U);
-        count++;
-      }
-    }
-
-    private Row GenerateRowForChildPartDetail(RowDfn rowDfn)
-    {
-      var row = new Row();
-
+      var row = new Row { RowIndex = rowIndex };
+      var columnIndex = 1;
       foreach (var cellDfn in rowDfn.Cells)
       {
-        _ = row.AppendChild(CreateCell(cellDfn));
+        _ = row.AppendChild(CreateCell(cellDfn, rowIndex, columnIndex));
+        columnIndex++;
       }
 
       return row;
     }
 
-    private SheetData GenerateSheetDataForDetails(WorksheetDfn worksheet)
+    private (SheetData SheetData, int MaxColumnCount, uint LastRowIndex) GenerateSheetDataForDetails(WorksheetDfn worksheet)
     {
       var sheetData1 = new SheetData();
+      var currentRowIndex = 1U;
+      var maxColumnCount = 0;
+
       if (worksheet.ColumnHeadings.Cells.Count > 0)
       {
-        _ = sheetData1.AppendChild(CreateHeaderRowForExcel(worksheet.ColumnHeadings.Cells));
+        _ = sheetData1.AppendChild(CreateHeaderRowForExcel(worksheet.ColumnHeadings.Cells, currentRowIndex));
+        maxColumnCount = worksheet.ColumnHeadings.Cells.Count;
+        currentRowIndex++;
       }
 
       foreach (var row in worksheet.Rows)
       {
-        var partsRows = GenerateRowForChildPartDetail(row);
+        var partsRows = GenerateRowForChildPartDetail(row, currentRowIndex);
         _ = sheetData1.AppendChild(partsRows);
+        if (row.Cells.Count > maxColumnCount)
+        {
+          maxColumnCount = row.Cells.Count;
+        }
+
+        currentRowIndex++;
       }
 
-      return sheetData1;
-    }
-
-    private void GenerateWorkbookStylesPartContent(WorkbookStylesPart workbookStylesPart)
-    {
-      var fonts = new Fonts { Count = 1U };
-
-      // Font 1
-      var font = new Font
-      {
-        FontSize = new FontSize { Val = 11D },
-        FontName = new FontName { Val = "Calibri" },
-        FontFamilyNumbering = new FontFamilyNumbering { Val = 2 },
-        FontScheme = new FontScheme { Val = FontSchemeValues.Minor },
-      };
-
-      _ = fonts.AppendChild(font);
-
-      // Default Fill
-      var fills = new Fills { Count = 1U };
-      var fill = new Fill { PatternFill = new PatternFill { PatternType = PatternValues.None } };
-      _ = fills.AppendChild(fill);
-
-      // Default Border
-      var borders = new Borders { Count = 1U };
-      var border = new Border
-      {
-        LeftBorder = new LeftBorder(),
-        RightBorder = new RightBorder(),
-        TopBorder = new TopBorder(),
-        BottomBorder = new BottomBorder(),
-        DiagonalBorder = new DiagonalBorder(),
-      };
-      _ = borders.AppendChild(border);
-
-      // CellStyleFormats
-      var cellStyleFormats = new CellStyleFormats { Count = 1U };
-      var cellFormat = new CellFormat { NumberFormatId = 0U, FontId = 0U, FillId = 0U, BorderId = 0U };
-      _ = cellStyleFormats.AppendChild(cellFormat);
-
-      // CellFormats
-      var cellFormats = new CellFormats { Count = 0U };
-
-      _ = _stylesheet.AppendChild(fonts);
-      _ = _stylesheet.AppendChild(fills);
-      _ = _stylesheet.AppendChild(borders);
-      _ = _stylesheet.AppendChild(cellStyleFormats);
-      _ = _stylesheet.AppendChild(cellFormats);
-
-      workbookStylesPart.Stylesheet = _stylesheet;
+      var lastRowIndex = currentRowIndex - 1U;
+      return (sheetData1, maxColumnCount, lastRowIndex);
     }
 
     private T? GetAttributeFrom<T>(PropertyInfo propertyInfo)
@@ -764,6 +775,416 @@ namespace SimpleExcelExporter
       {
         throw new DefinitionException("WorkBook could not be null or empty.");
       }
+    }
+
+    private void WriteContentTypes(ZipArchive archive)
+    {
+      var entry = archive.CreateEntry("[Content_Types].xml", CompressionLevel.Optimal);
+      using var stream = entry.Open();
+      var settings = new XmlWriterSettings
+      {
+        Encoding = new UTF8Encoding(encoderShouldEmitUTF8Identifier: false),
+        CloseOutput = false,
+      };
+      using var writer = XmlWriter.Create(stream, settings);
+
+      writer.WriteStartDocument(standalone: true);
+      writer.WriteStartElement("Types", Ns.ContentTypes);
+
+      writer.WriteStartElement("Default", Ns.ContentTypes);
+      writer.WriteAttributeString("Extension", "xml");
+      writer.WriteAttributeString("ContentType", "application/xml");
+      writer.WriteEndElement();
+
+      writer.WriteStartElement("Default", Ns.ContentTypes);
+      writer.WriteAttributeString("Extension", "rels");
+      writer.WriteAttributeString("ContentType", "application/vnd.openxmlformats-package.relationships+xml");
+      writer.WriteEndElement();
+
+      WriteOverride(writer, "/xl/workbook.xml", "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet.main+xml");
+      WriteOverride(writer, "/xl/styles.xml", "application/vnd.openxmlformats-officedocument.spreadsheetml.styles+xml");
+      WriteOverride(writer, "/xl/sharedStrings.xml", "application/vnd.openxmlformats-officedocument.spreadsheetml.sharedStrings+xml");
+      WriteOverride(writer, "/docProps/core.xml", "application/vnd.openxmlformats-package.core-properties+xml");
+
+      for (var i = 1; i <= _workbookDfn.Worksheets.Count; i++)
+      {
+        WriteOverride(writer, $"/xl/worksheets/sheet{i}.xml", "application/vnd.openxmlformats-officedocument.spreadsheetml.worksheet+xml");
+      }
+
+      writer.WriteEndElement();
+      writer.WriteEndDocument();
+    }
+
+    private int GetOrAddSharedString(string value)
+    {
+      _sharedStringsTotalCount++;
+      if (_sharedStringsIndex.TryGetValue(value, out var index))
+      {
+        return index;
+      }
+
+      index = _sharedStrings.Count;
+      _sharedStrings.Add(value);
+      _sharedStringsIndex[value] = index;
+      return index;
+    }
+
+    private void WriteSharedStrings(ZipArchive archive)
+    {
+      var entry = archive.CreateEntry("xl/sharedStrings.xml", CompressionLevel.Optimal);
+      using var stream = entry.Open();
+      var settings = new XmlWriterSettings
+      {
+        Encoding = new UTF8Encoding(encoderShouldEmitUTF8Identifier: false),
+        CloseOutput = false,
+      };
+      using var writer = XmlWriter.Create(stream, settings);
+
+      writer.WriteStartDocument(standalone: true);
+      writer.WriteStartElement(string.Empty, "sst", Ns.SpreadsheetMl);
+      writer.WriteAttributeString("count", _sharedStringsTotalCount.ToString(CultureInfo.InvariantCulture));
+      writer.WriteAttributeString("uniqueCount", _sharedStrings.Count.ToString(CultureInfo.InvariantCulture));
+
+      foreach (var value in _sharedStrings)
+      {
+        writer.WriteStartElement("si", Ns.SpreadsheetMl);
+        writer.WriteStartElement("t", Ns.SpreadsheetMl);
+        writer.WriteString(value);
+        writer.WriteEndElement();
+        writer.WriteEndElement();
+      }
+
+      writer.WriteEndElement();
+      writer.WriteEndDocument();
+    }
+
+    private void WriteStyles(ZipArchive archive)
+    {
+      var entry = archive.CreateEntry("xl/styles.xml", CompressionLevel.Optimal);
+      using var stream = entry.Open();
+      var settings = new XmlWriterSettings
+      {
+        Encoding = new UTF8Encoding(encoderShouldEmitUTF8Identifier: false),
+        CloseOutput = false,
+      };
+      using var writer = XmlWriter.Create(stream, settings);
+
+      writer.WriteStartDocument(standalone: true);
+      writer.WriteStartElement(string.Empty, "styleSheet", Ns.SpreadsheetMl);
+
+      // numFmts
+      writer.WriteStartElement("numFmts", Ns.SpreadsheetMl);
+      writer.WriteAttributeString("count", "0");
+      writer.WriteEndElement();
+
+      // fonts
+      writer.WriteStartElement("fonts", Ns.SpreadsheetMl);
+      writer.WriteAttributeString("count", "1");
+      writer.WriteStartElement("font", Ns.SpreadsheetMl);
+      writer.WriteStartElement("sz", Ns.SpreadsheetMl);
+      writer.WriteAttributeString("val", "11");
+      writer.WriteEndElement();
+      writer.WriteStartElement("name", Ns.SpreadsheetMl);
+      writer.WriteAttributeString("val", "Calibri");
+      writer.WriteEndElement();
+      writer.WriteStartElement("family", Ns.SpreadsheetMl);
+      writer.WriteAttributeString("val", "2");
+      writer.WriteEndElement();
+      writer.WriteStartElement("scheme", Ns.SpreadsheetMl);
+      writer.WriteAttributeString("val", "minor");
+      writer.WriteEndElement();
+      writer.WriteEndElement(); // font
+      writer.WriteEndElement(); // fonts
+
+      // fills
+      writer.WriteStartElement("fills", Ns.SpreadsheetMl);
+      writer.WriteAttributeString("count", "1");
+      writer.WriteStartElement("fill", Ns.SpreadsheetMl);
+      writer.WriteStartElement("patternFill", Ns.SpreadsheetMl);
+      writer.WriteAttributeString("patternType", "none");
+      writer.WriteEndElement();
+      writer.WriteEndElement();
+      writer.WriteEndElement();
+
+      // borders
+      writer.WriteStartElement("borders", Ns.SpreadsheetMl);
+      writer.WriteAttributeString("count", "1");
+      writer.WriteStartElement("border", Ns.SpreadsheetMl);
+      foreach (var tag in new[] { "left", "right", "top", "bottom", "diagonal" })
+      {
+        writer.WriteStartElement(tag, Ns.SpreadsheetMl);
+        writer.WriteEndElement();
+      }
+
+      writer.WriteEndElement(); // border
+      writer.WriteEndElement(); // borders
+
+      // cellStyleXfs
+      writer.WriteStartElement("cellStyleXfs", Ns.SpreadsheetMl);
+      writer.WriteAttributeString("count", "1");
+      writer.WriteStartElement("xf", Ns.SpreadsheetMl);
+      writer.WriteAttributeString("numFmtId", "0");
+      writer.WriteAttributeString("fontId", "0");
+      writer.WriteAttributeString("fillId", "0");
+      writer.WriteAttributeString("borderId", "0");
+      writer.WriteEndElement();
+      writer.WriteEndElement();
+
+      // cellXfs — one xf per style produced by CreateOrGetStylIndex
+      writer.WriteStartElement("cellXfs", Ns.SpreadsheetMl);
+      writer.WriteAttributeString("count", _numberFormatIds.Count.ToString(CultureInfo.InvariantCulture));
+      foreach (var numberFormatId in _numberFormatIds)
+      {
+        writer.WriteStartElement("xf", Ns.SpreadsheetMl);
+        writer.WriteAttributeString("numFmtId", numberFormatId.ToString(CultureInfo.InvariantCulture));
+        writer.WriteAttributeString("fontId", "0");
+        writer.WriteAttributeString("fillId", "0");
+        writer.WriteAttributeString("borderId", "0");
+        writer.WriteAttributeString("xfId", "0");
+        writer.WriteAttributeString("applyNumberFormat", "1");
+        writer.WriteAttributeString("applyFont", "1");
+        writer.WriteAttributeString("applyBorder", "1");
+        writer.WriteEndElement();
+      }
+
+      writer.WriteEndElement(); // cellXfs
+
+      // cellStyles
+      writer.WriteStartElement("cellStyles", Ns.SpreadsheetMl);
+      writer.WriteAttributeString("count", "1");
+      writer.WriteStartElement("cellStyle", Ns.SpreadsheetMl);
+      writer.WriteAttributeString("name", "Normal");
+      writer.WriteAttributeString("xfId", "0");
+      writer.WriteAttributeString("builtinId", "0");
+      writer.WriteEndElement();
+      writer.WriteEndElement();
+
+      // tableStyles
+      writer.WriteStartElement("tableStyles", Ns.SpreadsheetMl);
+      writer.WriteAttributeString("count", "0");
+      writer.WriteAttributeString("defaultTableStyle", "TableStyleMedium9");
+      writer.WriteAttributeString("defaultPivotStyle", "PivotStyleLight16");
+      writer.WriteEndElement();
+
+      writer.WriteEndElement(); // styleSheet
+      writer.WriteEndDocument();
+    }
+
+    private void WriteWorkbook(ZipArchive archive)
+    {
+      var entry = archive.CreateEntry("xl/workbook.xml", CompressionLevel.Optimal);
+      using var stream = entry.Open();
+      var settings = new XmlWriterSettings
+      {
+        Encoding = new UTF8Encoding(encoderShouldEmitUTF8Identifier: false),
+        CloseOutput = false,
+      };
+      using var writer = XmlWriter.Create(stream, settings);
+
+      writer.WriteStartDocument(standalone: true);
+      writer.WriteStartElement(string.Empty, "workbook", Ns.SpreadsheetMl);
+      writer.WriteAttributeString("xmlns", "r", null, Ns.Relationships);
+
+      writer.WriteStartElement("bookViews", Ns.SpreadsheetMl);
+      writer.WriteStartElement("workbookView", Ns.SpreadsheetMl);
+      writer.WriteEndElement();
+      writer.WriteEndElement();
+
+      writer.WriteStartElement("sheets", Ns.SpreadsheetMl);
+      var sheetId = 1U;
+      var rId = 3;
+      foreach (var ws in _workbookDfn.Worksheets)
+      {
+        writer.WriteStartElement("sheet", Ns.SpreadsheetMl);
+        writer.WriteAttributeString("name", ws.Name);
+        writer.WriteAttributeString("sheetId", sheetId.ToString(CultureInfo.InvariantCulture));
+        writer.WriteAttributeString("r", "id", Ns.Relationships, $"rId{rId}");
+        writer.WriteEndElement();
+        sheetId++;
+        rId++;
+      }
+
+      writer.WriteEndElement(); // sheets
+
+      writer.WriteEndElement(); // workbook
+      writer.WriteEndDocument();
+    }
+
+    private void WriteWorkbookRelationships(ZipArchive archive)
+    {
+      var entry = archive.CreateEntry("xl/_rels/workbook.xml.rels", CompressionLevel.Optimal);
+      using var stream = entry.Open();
+      var settings = new XmlWriterSettings
+      {
+        Encoding = new UTF8Encoding(encoderShouldEmitUTF8Identifier: false),
+        CloseOutput = false,
+      };
+      using var writer = XmlWriter.Create(stream, settings);
+
+      writer.WriteStartDocument(standalone: true);
+      writer.WriteStartElement("Relationships", Ns.PackageRelationships);
+
+      WriteRelationship(
+        writer,
+        "rId1",
+        "http://schemas.openxmlformats.org/officeDocument/2006/relationships/styles",
+        "styles.xml");
+
+      WriteRelationship(
+        writer,
+        "rId2",
+        "http://schemas.openxmlformats.org/officeDocument/2006/relationships/sharedStrings",
+        "sharedStrings.xml");
+
+      var rId = 3;
+      for (var i = 1; i <= _workbookDfn.Worksheets.Count; i++)
+      {
+        WriteRelationship(
+          writer,
+          $"rId{rId}",
+          "http://schemas.openxmlformats.org/officeDocument/2006/relationships/worksheet",
+          $"worksheets/sheet{i}.xml");
+        rId++;
+      }
+
+      writer.WriteEndElement();
+      writer.WriteEndDocument();
+    }
+
+    private void WriteWorksheets(ZipArchive archive)
+    {
+      var count = 1U;
+      foreach (var worksheet in _workbookDfn.Worksheets)
+      {
+        var entry = archive.CreateEntry($"xl/worksheets/sheet{count}.xml", CompressionLevel.Optimal);
+        using var stream = entry.Open();
+        var settings = new XmlWriterSettings
+        {
+          Encoding = new UTF8Encoding(encoderShouldEmitUTF8Identifier: false),
+          CloseOutput = false,
+        };
+        using var writer = XmlWriter.Create(stream, settings);
+
+        var (sheetData, maxColumnCount, lastRowIndex) = GenerateSheetDataForDetails(worksheet);
+
+        var reference = lastRowIndex == 0U || maxColumnCount == 0
+          ? "A1"
+          : $"A1:{ColumnReferenceHelper.ToLetters(maxColumnCount)}{lastRowIndex}";
+
+        writer.WriteStartDocument(standalone: true);
+        writer.WriteStartElement(string.Empty, "worksheet", Ns.SpreadsheetMl);
+
+        writer.WriteStartElement("dimension", Ns.SpreadsheetMl);
+        writer.WriteAttributeString("ref", reference);
+        writer.WriteEndElement();
+
+        writer.WriteStartElement("sheetViews", Ns.SpreadsheetMl);
+        writer.WriteStartElement("sheetView", Ns.SpreadsheetMl);
+        writer.WriteAttributeString("tabSelected", count == 1U ? "1" : "0");
+        writer.WriteAttributeString("workbookViewId", "0");
+        writer.WriteStartElement("selection", Ns.SpreadsheetMl);
+        writer.WriteAttributeString("activeCell", "A1");
+        writer.WriteAttributeString("sqref", "A1");
+        writer.WriteEndElement();
+        writer.WriteEndElement(); // sheetView
+        writer.WriteEndElement(); // sheetViews
+
+        writer.WriteStartElement("sheetFormatPr", Ns.SpreadsheetMl);
+        writer.WriteAttributeString("defaultRowHeight", "15");
+        writer.WriteAttributeString("defaultColWidth", "15");
+        writer.WriteEndElement();
+
+        // sheetData
+        writer.WriteStartElement("sheetData", Ns.SpreadsheetMl);
+        foreach (var row in sheetData.Elements<Row>())
+        {
+          writer.WriteStartElement("row", Ns.SpreadsheetMl);
+          if (row.RowIndex != null)
+          {
+            writer.WriteAttributeString("r", row.RowIndex.Value.ToString(CultureInfo.InvariantCulture));
+          }
+
+          foreach (var cell in row.Elements<Cell>())
+          {
+            // Omit cells that have no content. OOXML treats missing cells as empty by position
+            // (cell references on the surviving cells let the reader infer gaps). Matches Excel's
+            // native behaviour and slashes file size on sparse sheets such as MultiColumn padding.
+            // Trade-off: a skipped cell also loses its style hint, acceptable for read-only
+            // exports.
+            if (cell.CellValue == null && cell.InlineString == null)
+            {
+              continue;
+            }
+
+            writer.WriteStartElement("c", Ns.SpreadsheetMl);
+            if (cell.CellReference != null)
+            {
+              writer.WriteAttributeString("r", cell.CellReference.Value);
+            }
+
+            // Omit s="0" — OOXML defaults the style index to 0 when the attribute is absent,
+            // matching what Excel emits natively.
+            if (cell.StyleIndex != null && cell.StyleIndex.Value != 0U)
+            {
+              writer.WriteAttributeString("s", cell.StyleIndex.Value.ToString(CultureInfo.InvariantCulture));
+            }
+
+            // Omit t="n" — OOXML defaults the cell type to number when the t attribute is absent,
+            // matching what Excel emits natively. Other types (s, b, d, inlineStr, etc.) stay.
+            if (cell.DataType != null && cell.DataType.Value != CellValues.Number)
+            {
+              writer.WriteAttributeString("t", ToCellTypeAttribute(cell.DataType.Value));
+            }
+
+            if (cell.CellValue != null)
+            {
+              writer.WriteStartElement("v", Ns.SpreadsheetMl);
+              writer.WriteString(cell.CellValue.Text);
+              writer.WriteEndElement();
+            }
+
+            if (cell.InlineString != null)
+            {
+              writer.WriteStartElement("is", Ns.SpreadsheetMl);
+              writer.WriteStartElement("t", Ns.SpreadsheetMl);
+              writer.WriteString(cell.InlineString.Text?.Text ?? string.Empty);
+              writer.WriteEndElement();
+              writer.WriteEndElement();
+            }
+
+            writer.WriteEndElement(); // c
+          }
+
+          writer.WriteEndElement(); // row
+        }
+
+        writer.WriteEndElement(); // sheetData
+
+        writer.WriteStartElement("pageMargins", Ns.SpreadsheetMl);
+        writer.WriteAttributeString("left", "0.7");
+        writer.WriteAttributeString("right", "0.7");
+        writer.WriteAttributeString("top", "0.75");
+        writer.WriteAttributeString("bottom", "0.75");
+        writer.WriteAttributeString("header", "0.3");
+        writer.WriteAttributeString("footer", "0.3");
+        writer.WriteEndElement();
+
+        writer.WriteEndElement(); // worksheet
+        writer.WriteEndDocument();
+
+        count++;
+      }
+    }
+
+    private static class Ns
+    {
+      public const string ContentTypes = "http://schemas.openxmlformats.org/package/2006/content-types";
+
+      public const string PackageRelationships = "http://schemas.openxmlformats.org/package/2006/relationships";
+
+      public const string Relationships = "http://schemas.openxmlformats.org/officeDocument/2006/relationships";
+
+      public const string SpreadsheetMl = "http://schemas.openxmlformats.org/spreadsheetml/2006/main";
     }
   }
 }

@@ -15,7 +15,9 @@ namespace ConsoleApp
   {
     public static void Main()
     {
-      // First test : try to create empty Excel file
+      var totalStopwatch = Stopwatch.StartNew();
+
+      // First test: try to create empty Excel file
       var n = DateTime.Now;
       var tempDi = new DirectoryInfo($"ExampleOutput-{n.Year - 2000:00}-{n.Month:00}-{n.Day:00}-{n.Hour:00}{n.Minute:00}{n.Second:00}");
       tempDi.Create();
@@ -26,13 +28,18 @@ namespace ConsoleApp
       GenerateBigSpreadsheetFromAnnotatedData(tempDi);
       GenerateBigSpreadsheetFromWorkBookDfn(tempDi);
       GenerateSpreadsheetFromGroup(tempDi);
+
+      totalStopwatch.Stop();
+      Console.WriteLine();
+      Console.WriteLine($"Total execution time: {totalStopwatch.Elapsed.TotalSeconds:F2} seconds ({totalStopwatch.Elapsed:hh\\:mm\\:ss})");
     }
 
     private static void GenerateSpreadsheetFromGroup(DirectoryInfo tempDi)
     {
-      Console.WriteLine("GenerateBigSpreadsheetFromAnnotatedData");
+      Console.WriteLine("GenerateSpreadsheetFromGroup");
       using var memoryStream = new MemoryStream();
       using var streamWriter = new StreamWriter(memoryStream);
+      Console.WriteLine("Generating the persons...");
       var stopwatch = new Stopwatch();
       stopwatch.Start();
       var group = new Group();
@@ -54,21 +61,21 @@ namespace ConsoleApp
       }
 
       stopwatch.Stop();
-      Console.WriteLine($"Done in {stopwatch.Elapsed.Seconds} seconds !");
+      Console.WriteLine($"Done in {stopwatch.Elapsed.TotalSeconds:F2} seconds !");
 
-      Console.WriteLine("Instantiating the SpreadsheetWriter...");
+      Console.WriteLine("Preparing the SpreadsheetWriter...");
       stopwatch.Reset();
       stopwatch.Start();
       var spreadsheetWriter = new SpreadsheetWriter(streamWriter.BaseStream, group);
       stopwatch.Stop();
-      Console.WriteLine($"Done in {stopwatch.Elapsed.Seconds} seconds !");
+      Console.WriteLine($"Done in {stopwatch.Elapsed.TotalSeconds:F2} seconds !");
 
       Console.WriteLine("Writing the Excel file...");
       stopwatch.Reset();
       stopwatch.Start();
       spreadsheetWriter.Write();
       stopwatch.Stop();
-      Console.WriteLine($"Done in {stopwatch.Elapsed.Seconds} seconds !");
+      Console.WriteLine($"Done in {stopwatch.Elapsed.TotalSeconds:F2} seconds !");
 
       using var file = new FileStream(Path.Combine(tempDi.FullName, "TestWithData5.xlsx"), FileMode.Create, FileAccess.Write);
       memoryStream.WriteTo(file);
@@ -80,8 +87,11 @@ namespace ConsoleApp
       using var memoryStream = new MemoryStream();
       using var streamWriter = new StreamWriter(memoryStream);
       var team = new Team();
-      var rnd = new Random();
-      var weakPseudoRandomDate = new WeakPseudoRandomDateTime();
+      // Fixed seeds make the generated data deterministic across runs — essential for
+      // before/after size and timing comparisons during perf work. No production impact:
+      // ConsoleApp is a benchmark harness, not a shipped product.
+      var rnd = new Random(42);
+      var weakPseudoRandomDate = new WeakPseudoRandomDateTime(42);
       Console.WriteLine("Generating the players...");
       var stopwatch = new Stopwatch();
       stopwatch.Start();
@@ -146,21 +156,21 @@ namespace ConsoleApp
       }
 
       stopwatch.Stop();
-      Console.WriteLine($"Done in {stopwatch.Elapsed.Seconds} seconds !");
+      Console.WriteLine($"Done in {stopwatch.Elapsed.TotalSeconds:F2} seconds !");
 
-      Console.WriteLine("Instantiating the SpreadsheetWriter...");
+      Console.WriteLine("Preparing the SpreadsheetWriter...");
       stopwatch.Reset();
       stopwatch.Start();
       var spreadsheetWriter = new SpreadsheetWriter(streamWriter.BaseStream, team);
       stopwatch.Stop();
-      Console.WriteLine($"Done in {stopwatch.Elapsed.Seconds} seconds !");
+      Console.WriteLine($"Done in {stopwatch.Elapsed.TotalSeconds:F2} seconds !");
 
       Console.WriteLine("Writing the Excel file...");
       stopwatch.Reset();
       stopwatch.Start();
       spreadsheetWriter.Write();
       stopwatch.Stop();
-      Console.WriteLine($"Done in {stopwatch.Elapsed.Seconds} seconds !");
+      Console.WriteLine($"Done in {stopwatch.Elapsed.TotalSeconds:F2} seconds !");
 
       using var file = new FileStream(Path.Combine(tempDi.FullName, "TestWithData3.xlsx"), FileMode.Create, FileAccess.Write);
       memoryStream.WriteTo(file);
@@ -174,8 +184,11 @@ namespace ConsoleApp
       var workbookDfn = new WorkbookDfn();
       var worksheetDfn = new WorksheetDfn("Team");
       workbookDfn.Worksheets.Add(worksheetDfn);
-      var rnd = new Random();
-      var weakPseudoRandomDate = new WeakPseudoRandomDateTime();
+      // Fixed seeds make the generated data deterministic across runs — essential for
+      // before/after size and timing comparisons during perf work. No production impact:
+      // ConsoleApp is a benchmark harness, not a shipped product.
+      var rnd = new Random(42);
+      var weakPseudoRandomDate = new WeakPseudoRandomDateTime(42);
       Console.WriteLine("Generating the players...");
       var stopwatch = new Stopwatch();
       stopwatch.Start();
@@ -199,21 +212,21 @@ namespace ConsoleApp
       }
 
       stopwatch.Stop();
-      Console.WriteLine($"Done in {stopwatch.Elapsed.Seconds} seconds !");
+      Console.WriteLine($"Done in {stopwatch.Elapsed.TotalSeconds:F2} seconds !");
 
-      Console.WriteLine("Instantiating the SpreadsheetWriter...");
+      Console.WriteLine("Preparing the SpreadsheetWriter...");
       stopwatch.Reset();
       stopwatch.Start();
       var spreadsheetWriter = new SpreadsheetWriter(streamWriter.BaseStream, workbookDfn);
       stopwatch.Stop();
-      Console.WriteLine($"Done in {stopwatch.Elapsed.Seconds} seconds !");
+      Console.WriteLine($"Done in {stopwatch.Elapsed.TotalSeconds:F2} seconds !");
 
       Console.WriteLine("Writing the Excel file...");
       stopwatch.Reset();
       stopwatch.Start();
       spreadsheetWriter.Write();
       stopwatch.Stop();
-      Console.WriteLine($"Done in {stopwatch.Elapsed.Seconds} seconds !");
+      Console.WriteLine($"Done in {stopwatch.Elapsed.TotalSeconds:F2} seconds !");
 
       using var file = new FileStream(Path.Combine(tempDi.FullName, "TestWithData4.xlsx"), FileMode.Create, FileAccess.Write);
       memoryStream.WriteTo(file);

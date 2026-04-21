@@ -8,10 +8,10 @@
     private readonly Random _gen;
     private readonly int _range;
 
-    public WeakPseudoRandomDateTime()
+    public WeakPseudoRandomDateTime(int seed)
     {
       _start = new DateTime(1970, 1, 1);
-      _gen = new Random();
+      _gen = new Random(seed);
       _range = (DateTime.Today - _start).Days;
     }
 

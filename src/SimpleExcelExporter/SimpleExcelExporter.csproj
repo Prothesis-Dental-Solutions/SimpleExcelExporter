@@ -7,7 +7,7 @@
     <PackageLicenseExpression>LGPL-3.0-or-later</PackageLicenseExpression>
     <Nullable>enable</Nullable>
     <TargetFramework>net8.0</TargetFramework>
-    <Version>1.4.4</Version>
+    <Version>1.5.0-alpha.1</Version>
     <WarningsAsErrors>CS8597;CS8600;CS8601;CS8602;CS8603;CS8604;CS8605;CS8606;CS8607;CS8608;CS8609;CS8610;CS8611;CS8612;CS8613;CS8614;CS8615;CS8616;CS8617;CS8618;CS8619;CS8620;CS8621;CS8622;CS8624;CS8625;CS8626;CS8629;CS8631;CS8632;CS8633;CS8634;CS8638;CS8643;CS8644;CS8645;CS8653;CS8654;CS8655;CS8667;CS8714</WarningsAsErrors>
     <NeutralLanguage>en</NeutralLanguage>
     <Description>Helps exporting objects to an Excel file (.xlsx).</Description>
@@ -17,6 +17,12 @@
     <PackageReadmeFile>README.md</PackageReadmeFile>
     <RepositoryUrl>https://github.com/Prothesis-Dental-Solutions/SimpleExcelExporter</RepositoryUrl>
     <PackageTags>Excel;export;Open-XML-SDK;xlsx;ooxml</PackageTags>
+    <RestorePackagesWithLockFile>true</RestorePackagesWithLockFile>
+    <IncludeSymbols>true</IncludeSymbols>
+    <SymbolPackageFormat>snupkg</SymbolPackageFormat>
+    <ContinuousIntegrationBuild Condition="'$(GITHUB_ACTIONS)' == 'true'">true</ContinuousIntegrationBuild>
+    <PublishRepositoryUrl>true</PublishRepositoryUrl>
+    <EmbedUntrackedSources>true</EmbedUntrackedSources>
   </PropertyGroup>
 
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|AnyCPU'">
@@ -38,7 +44,8 @@
   </ItemGroup>
 
   <ItemGroup>
-    <PackageReference Include="DocumentFormat.OpenXml" Version="3.2.0" />
+    <PackageReference Include="DocumentFormat.OpenXml" Version="3.5.1" />
+    <PackageReference Include="Microsoft.SourceLink.GitHub" Version="8.0.0" PrivateAssets="all" />
     <PackageReference Include="StyleCop.Analyzers" Version="1.2.0-beta.556" PrivateAssets="all">
       <IncludeAssets>runtime; build; native; contentfiles; analyzers; buildtransitive</IncludeAssets>
     </PackageReference>
