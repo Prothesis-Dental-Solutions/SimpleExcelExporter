@@ -56,3 +56,8 @@ jobs:
       uses: softprops/action-gh-release@v3
       with:
         generate_release_notes: true
+        # Tags containing a hyphen (e.g. v1.5.0-alpha.1, v1.5.0-rc.1) are SemVer
+        # pre-releases. The action does not infer this from the tag name alone —
+        # it must be told explicitly, otherwise the release is marked as the
+        # latest stable and shown that way on the repo homepage.
+        prerelease: ${{ contains(github.ref, '-') }}
