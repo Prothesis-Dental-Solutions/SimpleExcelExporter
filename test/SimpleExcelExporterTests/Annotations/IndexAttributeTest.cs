@@ -12,7 +12,7 @@ namespace SimpleExcelExporter.Tests.Annotations
     {
       //Prepare && Act & Check
       // ReSharper disable once ObjectCreationAsStatement
-      Assert.Throws<InvalidOperationException>(() => new IndexAttribute(-1));
+      Assert.Throws<InvalidOperationException>((Action)(() => new IndexAttribute(-1)));
 
       // Prepare
       var expectedIndex = 1;

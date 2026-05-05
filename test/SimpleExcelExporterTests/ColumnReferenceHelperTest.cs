@@ -1,5 +1,6 @@
 namespace SimpleExcelExporter.Tests
 {
+  using System;
   using NUnit.Framework;
 
   [TestFixture]
@@ -25,8 +26,8 @@ namespace SimpleExcelExporter.Tests
     [Test]
     public void ToLetters_ThrowsForZeroOrNegative()
     {
-      Assert.Throws<System.ArgumentOutOfRangeException>(() => ColumnReferenceHelper.ToLetters(0));
-      Assert.Throws<System.ArgumentOutOfRangeException>(() => ColumnReferenceHelper.ToLetters(-1));
+      Assert.Throws<ArgumentOutOfRangeException>((Action)(() => ColumnReferenceHelper.ToLetters(0)));
+      Assert.Throws<ArgumentOutOfRangeException>((Action)(() => ColumnReferenceHelper.ToLetters(-1)));
     }
   }
 }
