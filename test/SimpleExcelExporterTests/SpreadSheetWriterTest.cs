@@ -1,5 +1,6 @@
 namespace SimpleExcelExporter.Tests
 {
+  using System;
   using System.Collections.Generic;
   using System.IO;
   using System.Linq;
@@ -24,7 +25,7 @@ namespace SimpleExcelExporter.Tests
 
       // Act && Check
       // ReSharper disable once ObjectCreationAsStatement
-      Assert.Throws<DefinitionException>(() => new SpreadsheetWriter(new MemoryStream(), workBookDfn));
+      Assert.Throws<DefinitionException>((Action)(() => new SpreadsheetWriter(new MemoryStream(), workBookDfn)));
 
       // Prepare a non-empty workbook
       workBookDfn = WorkbookDfnPreparator.FirstFirstWithCollections();
@@ -96,7 +97,7 @@ namespace SimpleExcelExporter.Tests
 
       // Act
       // ReSharper disable once ObjectCreationAsStatement
-      Assert.Throws<DefinitionException>(() => new SpreadsheetWriter(memoryStream, teamWithSameSheetName));
+      Assert.Throws<DefinitionException>((Action)(() => new SpreadsheetWriter(memoryStream, teamWithSameSheetName)));
     }
 
     [Test]
@@ -111,7 +112,7 @@ namespace SimpleExcelExporter.Tests
 
       // Act
       // ReSharper disable once ObjectCreationAsStatement
-      var simpleExcelExporterException = Assert.Throws<SimpleExcelExporterException>(() => new SpreadsheetWriter(memoryStream, workBookDfn));
+      var simpleExcelExporterException = Assert.Throws<SimpleExcelExporterException>((Action)(() => new SpreadsheetWriter(memoryStream, workBookDfn)));
 
       // Check
       Assert.That(simpleExcelExporterException, Is.Not.Null);

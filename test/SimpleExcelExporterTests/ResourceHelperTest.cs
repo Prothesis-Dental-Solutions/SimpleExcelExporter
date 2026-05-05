@@ -14,10 +14,10 @@ namespace SimpleExcelExporter.Tests
       var resourceType = typeof(MessageRes);
 
       // Act && Check -- ResourceType invalid
-      Assert.Throws<InvalidOperationException>(() => ResourceHelper.GetResourceLookup(typeof(string), string.Empty));
+      Assert.Throws<InvalidOperationException>((Action)(() => ResourceHelper.GetResourceLookup(typeof(string), string.Empty)));
 
       // Act && Check -- Resource name does not exist
-      Assert.Throws<InvalidOperationException>(() => ResourceHelper.GetResourceLookup(resourceType, "PropertyDoesNotExist"));
+      Assert.Throws<InvalidOperationException>((Action)(() => ResourceHelper.GetResourceLookup(resourceType, "PropertyDoesNotExist")));
 
       // Act 
       var resultValue = ResourceHelper.GetResourceLookup(resourceType, "EmptyMessageDefault");
