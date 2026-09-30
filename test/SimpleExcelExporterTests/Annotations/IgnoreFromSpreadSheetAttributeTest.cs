@@ -14,7 +14,7 @@ namespace SimpleExcelExporter.Tests.Annotations
 
       // Act & Check
       Assert.That(ignoreFromSpreadSheetAttribute, Is.Not.Null);
-      Assert.That(true, Is.EqualTo(ignoreFromSpreadSheetAttribute.IgnoreFlag));
+      Assert.That(ignoreFromSpreadSheetAttribute.IgnoreFlag, Is.True);
     }
   }
 }

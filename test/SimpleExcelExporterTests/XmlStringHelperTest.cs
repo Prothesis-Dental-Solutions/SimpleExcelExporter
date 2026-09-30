@@ -12,7 +12,7 @@ namespace SimpleExcelExporter.Tests
       var value = XmlStringHelper.Sanitize("|\b|\n|\t|\r|<|>|&|'|\"|");
 
       // Check
-      Assert.That("| |\n|\t|\r|<|>|&|'|\"|", Is.EqualTo(value));
+      Assert.That(value, Is.EqualTo("| |\n|\t|\r|<|>|&|'|\"|"));
     }
   }
 }

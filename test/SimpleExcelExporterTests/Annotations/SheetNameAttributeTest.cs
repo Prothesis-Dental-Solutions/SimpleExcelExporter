@@ -17,7 +17,7 @@ namespace SimpleExcelExporter.Tests.Annotations
 
       // Act & Check
       Assert.That(sheetNameAttribute, Is.Not.Null);
-      Assert.That(PlayerDummyObjectRes.PlayerNameColumnName, Is.EqualTo(sheetNameAttribute.Text));
+      Assert.That(sheetNameAttribute.Text, Is.EqualTo(PlayerDummyObjectRes.PlayerNameColumnName));
     }
   }
 }

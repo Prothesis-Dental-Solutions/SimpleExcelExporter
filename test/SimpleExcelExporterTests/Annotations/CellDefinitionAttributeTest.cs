@@ -15,7 +15,7 @@ namespace SimpleExcelExporter.Tests.Annotations
 
       // Act & Check
       Assert.That(cellDefinitionAttribute, Is.Not.Null);
-      Assert.That(CellDataType.Boolean, Is.EqualTo(cellDefinitionAttribute.CellDataType));
+      Assert.That(cellDefinitionAttribute.CellDataType, Is.EqualTo(CellDataType.Boolean));
     }
   }
 }

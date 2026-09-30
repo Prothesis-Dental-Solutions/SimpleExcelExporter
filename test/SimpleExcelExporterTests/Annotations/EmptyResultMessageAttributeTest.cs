@@ -17,7 +17,7 @@ namespace SimpleExcelExporter.Tests.Annotations
 
       // Act & Check
       Assert.That(emptyResultMessageAttribute, Is.Not.Null);
-      Assert.That(MessageRes.EmptyMessageDefault, Is.EqualTo(emptyResultMessageAttribute.Text));
+      Assert.That(emptyResultMessageAttribute.Text, Is.EqualTo(MessageRes.EmptyMessageDefault));
     }
   }
 }

@@ -91,8 +91,11 @@ namespace SimpleExcelExporter.Tests
       using var docTrue = SpreadsheetDocument.Open(streamTrue, false);
       using var docFalse = SpreadsheetDocument.Open(streamFalse, false);
 
-      Assert.That(GetRowCells(docTrue)[0].CellValue!.InnerText, Is.EqualTo("0"));
-      Assert.That(GetRowCells(docFalse)[0].CellValue!.InnerText, Is.EqualTo("1"));
+      using (Assert.EnterMultipleScope())
+      {
+        Assert.That(GetRowCells(docTrue)[0].CellValue!.InnerText, Is.EqualTo("0"));
+        Assert.That(GetRowCells(docFalse)[0].CellValue!.InnerText, Is.EqualTo("1"));
+      }
     }
 
     [Test]
@@ -167,7 +170,7 @@ namespace SimpleExcelExporter.Tests
       // All 20 date cells share the same style index; worksheet may have others
       // implicitly (default 0 for the sheet, but only 1 distinct for Date cells).
       var dateFormats = cellFormats.Where(cf => cf.NumberFormatId?.Value == 14U).ToList();
-      Assert.That(dateFormats.Count, Is.EqualTo(1), "Expected exactly one CellFormat with numFmtId=14 (Date), found " + dateFormats.Count);
+      Assert.That(dateFormats, Has.Count.EqualTo(1), "Expected exactly one CellFormat with numFmtId=14 (Date), found " + dateFormats.Count);
     }
 
     [TestCase(CellDataType.Date, 14U)]
@@ -226,7 +229,7 @@ namespace SimpleExcelExporter.Tests
       using var doc = SpreadsheetDocument.Open(stream, false);
       var sheets = doc.WorkbookPart!.Workbook!.Sheets!.Elements<Sheet>().ToList();
 
-      Assert.That(sheets.Count, Is.EqualTo(3));
+      Assert.That(sheets, Has.Count.EqualTo(3));
       Assert.That(sheets.Select(s => s.Name?.Value).ToList(), Is.EqualTo(ExpectedMultiSheetNames));
     }
 
@@ -247,9 +250,12 @@ namespace SimpleExcelExporter.Tests
       // The first three columns must come from Index=0,1,2 = PlayerCode, PlayerName, DateOfBirth.
       // Exact header values come from PlayerDummyObjectRes resources; we only check the relative
       // order matches the IndexAttribute assignment.
-      Assert.That(headers[0], Is.Not.Null.And.Not.Empty);
-      Assert.That(headers[1], Is.Not.Null.And.Not.Empty);
-      Assert.That(headers[2], Is.Not.Null.And.Not.Empty);
+      using (Assert.EnterMultipleScope())
+      {
+        Assert.That(headers[0], Is.Not.Null.And.Not.Empty);
+        Assert.That(headers[1], Is.Not.Null.And.Not.Empty);
+        Assert.That(headers[2], Is.Not.Null.And.Not.Empty);
+      }
 
       // The Player.PlayerCode property has Index 0 so its header is first.
       // Its resource value 'Player code' is stable across master and PR.

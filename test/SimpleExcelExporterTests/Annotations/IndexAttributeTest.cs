@@ -19,7 +19,6 @@ namespace SimpleExcelExporter.Tests.Annotations
       var indexAttribute = new IndexAttribute(expectedIndex);
 
       //Act && Check
-      Assert.That(indexAttribute.Index, Is.Not.Null);
       Assert.That(indexAttribute.Index, Is.EqualTo(expectedIndex));
     }
   }

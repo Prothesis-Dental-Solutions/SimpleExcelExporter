@@ -14,8 +14,11 @@ namespace SimpleExcelExporter.Tests.Annotations
 
       // Act & Check
       Assert.That(multiColumnAttribute, Is.Not.Null);
-      Assert.That(multiColumnAttribute.MinimalNumberOfElement, Is.EqualTo(0));
-      Assert.That(multiColumnAttribute.MaxNumberOfElement, Is.EqualTo(0));
+      using (Assert.EnterMultipleScope())
+      {
+        Assert.That(multiColumnAttribute.MinimalNumberOfElement, Is.Zero);
+        Assert.That(multiColumnAttribute.MaxNumberOfElement, Is.Zero);
+      }
     }
 
 
@@ -27,8 +30,11 @@ namespace SimpleExcelExporter.Tests.Annotations
 
       // Act & Check
       Assert.That(multiColumnAttribute, Is.Not.Null);
-      Assert.That(multiColumnAttribute.MinimalNumberOfElement, Is.EqualTo(6));
-      Assert.That(multiColumnAttribute.MaxNumberOfElement, Is.EqualTo(6));
+      using (Assert.EnterMultipleScope())
+      {
+        Assert.That(multiColumnAttribute.MinimalNumberOfElement, Is.EqualTo(6));
+        Assert.That(multiColumnAttribute.MaxNumberOfElement, Is.EqualTo(6));
+      }
     }
   }
 }
