@@ -25,3 +25,12 @@ jobs:
       run: dotnet build --no-restore --configuration Release
     - name: Test
       run: dotnet test --no-build --configuration Release --verbosity normal
+
+  line-endings:
+
+    runs-on: ubuntu-latest
+
+    steps:
+    - uses: actions/checkout@v7
+    - name: Check line endings
+      run: scripts/check-line-endings.sh
