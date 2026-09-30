@@ -1,0 +1,6 @@
+# Commits that only reformat the code (no behavior change), hidden from `git blame`.
+# GitHub applies this file automatically. Locally, run once per clone:
+#   git config blame.ignoreRevsFile .git-blame-ignore-revs
+
+# chore: normalize line endings to LF and enforce them in CI (#39)
+21f382b23e497ab0c904fea92f835e251ed4c6d2
