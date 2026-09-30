@@ -17,9 +17,12 @@ namespace SimpleExcelExporter.Tests.Annotations
 
       // Act & Check
       Assert.That(headerAttribute, Is.Not.Null);
-      Assert.That(PlayerDummyObjectRes.PlayerNameColumnName, Is.EqualTo(headerAttribute.Text));
-      Assert.That("PlayerNameColumnName", Is.EqualTo(headerAttribute.ResourceName));
-      Assert.That(typeof(PlayerDummyObjectRes), Is.EqualTo(headerAttribute.ResourceType));
+      using (Assert.EnterMultipleScope())
+      {
+        Assert.That(headerAttribute.Text, Is.EqualTo(PlayerDummyObjectRes.PlayerNameColumnName));
+        Assert.That(headerAttribute.ResourceName, Is.EqualTo("PlayerNameColumnName"));
+        Assert.That(headerAttribute.ResourceType, Is.EqualTo(typeof(PlayerDummyObjectRes)));
+      }
     }
   }
 }

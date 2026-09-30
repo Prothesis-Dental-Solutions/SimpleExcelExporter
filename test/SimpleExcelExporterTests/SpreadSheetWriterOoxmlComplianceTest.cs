@@ -46,8 +46,11 @@ namespace SimpleExcelExporter.Tests
 
           var letters = new string(cellRef!.Value.TakeWhile(char.IsLetter).ToArray());
           var rowPart = cellRef.Value[letters.Length ..];
-          Assert.That(letters, Is.Not.Empty, $"Cell reference '{cellRef.Value}' has no column letters");
-          Assert.That(rowPart, Is.EqualTo(expectedRowIndex.ToString()), $"Cell reference '{cellRef.Value}' does not match row {expectedRowIndex}");
+          using (Assert.EnterMultipleScope())
+          {
+            Assert.That(letters, Is.Not.Empty, $"Cell reference '{cellRef.Value}' has no column letters");
+            Assert.That(rowPart, Is.EqualTo(expectedRowIndex.ToString()), $"Cell reference '{cellRef.Value}' does not match row {expectedRowIndex}");
+          }
 
           var columnIndex = LettersToColumnIndex(letters);
           Assert.That(columnIndex, Is.GreaterThan(lastColumnIndex), "Cells must appear in strictly increasing column order within a row");
@@ -124,10 +127,14 @@ namespace SimpleExcelExporter.Tests
 
       foreach (var cell in sharedCells)
       {
-        Assert.That(cell.Element(ns + "is"), Is.Null, $"t=\"s\" cell {cell.Attribute("r")?.Value} must NOT have <is> element");
         var value = cell.Element(ns + "v");
-        Assert.That(value, Is.Not.Null, $"t=\"s\" cell {cell.Attribute("r")?.Value} must have <v> element with index");
-        Assert.That(int.TryParse(value!.Value, out _), Is.True, $"t=\"s\" cell {cell.Attribute("r")?.Value} value must be an integer index");
+        using (Assert.EnterMultipleScope())
+        {
+          Assert.That(cell.Element(ns + "is"), Is.Null, $"t=\"s\" cell {cell.Attribute("r")?.Value} must NOT have <is> element");
+          Assert.That(value, Is.Not.Null, $"t=\"s\" cell {cell.Attribute("r")?.Value} must have <v> element with index");
+        }
+
+        Assert.That(value!.Value, Does.Match(@"^\d+$"), $"t=\"s\" cell {cell.Attribute("r")?.Value} value must be an integer index");
       }
 
       // Empty strings remain as self-closing t="inlineStr" — see EmptyInlineStrCell_IsSelfClosingWithoutIsChild.
@@ -163,7 +170,7 @@ namespace SimpleExcelExporter.Tests
       {
         var text = si.Element(ns + "t");
         Assert.That(text, Is.Not.Null, "<si> must contain a <t> element");
-        Assert.That(string.IsNullOrEmpty(text!.Value), Is.False, "<si><t> must not be empty — empty strings belong in inline cells");
+        Assert.That(text!.Value, Is.Not.Empty, "<si><t> must not be empty — empty strings belong in inline cells");
       }
 
       // Verify every t="s" cell references a valid index.
@@ -200,8 +207,13 @@ namespace SimpleExcelExporter.Tests
         }
       }
 
-      Assert.That(lastDefaultIndex, Is.GreaterThanOrEqualTo(0), "Expected at least one <Default> element");
-      Assert.That(firstOverrideIndex, Is.GreaterThanOrEqualTo(0), "Expected at least one <Override> element");
+      using (Assert.EnterMultipleScope())
+      {
+        Assert.That(lastDefaultIndex, Is.GreaterThanOrEqualTo(0), "Expected at least one <Default> element");
+        Assert.That(firstOverrideIndex, Is.GreaterThanOrEqualTo(0), "Expected at least one <Override> element");
+      }
+
+
       Assert.That(
         lastDefaultIndex,
         Is.LessThan(firstOverrideIndex),
@@ -257,8 +269,11 @@ namespace SimpleExcelExporter.Tests
       // Sanity: the neighbouring cells should still be present to bracket the missing G4.
       var cellF4 = sheetXml.Descendants(ns + "c").SingleOrDefault(c => (string?)c.Attribute("r") == "F4");
       var cellH4 = sheetXml.Descendants(ns + "c").SingleOrDefault(c => (string?)c.Attribute("r") == "H4");
-      Assert.That(cellF4, Is.Not.Null, "Expected cell F4 to be present (non-empty in the fixture)");
-      Assert.That(cellH4, Is.Not.Null, "Expected cell H4 to be present (non-empty in the fixture)");
+      using (Assert.EnterMultipleScope())
+      {
+        Assert.That(cellF4, Is.Not.Null, "Expected cell F4 to be present (non-empty in the fixture)");
+        Assert.That(cellH4, Is.Not.Null, "Expected cell H4 to be present (non-empty in the fixture)");
+      }
     }
 
     [Test]
