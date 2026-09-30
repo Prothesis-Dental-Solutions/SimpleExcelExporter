@@ -87,6 +87,7 @@ namespace ConsoleApp
       using var memoryStream = new MemoryStream();
       using var streamWriter = new StreamWriter(memoryStream);
       var team = new Team();
+
       // Fixed seeds make the generated data deterministic across runs — essential for
       // before/after size and timing comparisons during perf work. No production impact:
       // ConsoleApp is a benchmark harness, not a shipped product.
@@ -184,6 +185,7 @@ namespace ConsoleApp
       var workbookDfn = new WorkbookDfn();
       var worksheetDfn = new WorksheetDfn("Team");
       workbookDfn.Worksheets.Add(worksheetDfn);
+
       // Fixed seeds make the generated data deterministic across runs — essential for
       // before/after size and timing comparisons during perf work. No production impact:
       // ConsoleApp is a benchmark harness, not a shipped product.
